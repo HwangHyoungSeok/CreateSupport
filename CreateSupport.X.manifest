@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AddIn Type="Standard">
+
+	<!-- GUID : StandardAddInServer의 GuidAttribute와 100% 일치해야 함 -->
+	<ClassId>{E98684B1-DC81-4B1C-B0CA-F078700E855C}</ClassId>
+
+	<!-- AddIn의 표시 이름 -->
+	<DisplayName>CreateSupport</DisplayName>
+	<Description>CreateSupport Add-In</Description>
+
+	<!-- 이 Add-In DLL 파일명 (Output DLL 이름과 반드시 같아야 함) -->
+	<Assembly>CreateSupport.dll</Assembly>
+
+	<!-- 네임스페이스 + 클래스명 -->
+	<FullClassName>CreateSupport.StandardAddInServer</FullClassName>
+
+	<!-- Inventor 실행 시 자동 로드 -->
+	<LoadOnStart>True</LoadOnStart>
+
+	<!-- 이 Add-In이 사용 가능한 환경 -->
+	<Environment>Part</Environment>
+	<Environment>Assembly</Environment>
+	<Environment>ZeroDoc</Environment>
+
+	<!-- 버전 정보 -->
+	<AddInType>Standard</AddInType>
+	<UserUnloadable>True</UserUnloadable>
+	<Hidden>False</Hidden>
+
+	<!-- Inventor 2026 (=Version 30) 이상 지원 -->
+	<SupportedSoftwareVersionGreaterThan>29..</SupportedSoftwareVersionGreaterThan>
+
+</AddIn>

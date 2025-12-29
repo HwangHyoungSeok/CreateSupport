@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Addin Type="Standard">
+	<!--Created for Autodesk Inventor Version 30.0-->
+
+	<!-- StandardAddInServer의 GuidAttribute와 동일 -->
+	<ClassId>{E98684B1-DC81-4B1C-B0CA-F078700E855C}</ClassId>
+
+	<!-- Add-In 이름 / 설명 -->
+	<DisplayName>CreateSupport</DisplayName>
+	<Description>CreateSupport Add-In</Description>
+
+	<!-- 빌드된 DLL 파일명과 동일 -->
+	<Assembly>CreateSupport.dll</Assembly>
+
+	<!-- Namespace + Class Name -->
+	<FullClassName>CreateSupport.StandardAddInServer</FullClassName>
+
+	<!-- Inventor 실행 시 자동 로드 (1=True, 0=False) -->
+	<LoadOnStartUp>1</LoadOnStartUp>
+
+	<!-- 사용자가 Add-In 관리자에서 언로드 가능 여부 -->
+	<UserUnloadable>1</UserUnloadable>
+
+	<!-- Add-In을 목록에서 숨길지 여부 (0 = 표시) -->
+	<Hidden>0</Hidden>
+
+	<!-- 지원 버전: 29.. = Inventor 2025~, 30.0은 2026 -->
+	<SupportedSoftwareVersionGreaterThan>29..</SupportedSoftwareVersionGreaterThan>
+
+	<!-- 선택 항목: 버전 관리용 숫자 -->
+	<DataVersion>1</DataVersion>
+	<UserInterfaceVersion>1</UserInterfaceVersion>
+</Addin>
