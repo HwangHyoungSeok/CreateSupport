@@ -12,7 +12,7 @@ Imports Inventor
 Imports stdole
 Imports System.Windows.Forms
 Imports WinForms = System.Windows.Forms
-Imports System.Drawing   ' Bitmap 사용
+Imports Drawing = System.Drawing
 
 
 
@@ -61,8 +61,7 @@ Namespace CreateSupport
                 ' ─ 버튼 정의 재사용 or 생성 ─
                 Try
                     ' 이미 정의된 버튼이 있으면 그걸 재사용
-                    m_supportButton = CType(controlDefs.Item("hye.CreateSupportButton"),
-                            ButtonDefinition)
+                    m_supportButton = CType(controlDefs.Item("hye.CreateSupportButton.v2"), ButtonDefinition)
 
                 Catch
                     ' ▼▼ 여기서 새로 버튼을 만들 때 Resource1.surpport32 아이콘을 함께 지정 ▼▼
@@ -71,7 +70,7 @@ Namespace CreateSupport
                     Dim baseBmp As Drawing.Bitmap = Nothing
                     Try
                         ' Resource1.resx 안의 surpport32.png 사용
-                        baseBmp = CreateSupport.Resource1.surpport32
+                        baseBmp = CreateSupport.Resource1.support32
                     Catch
                         baseBmp = Nothing
                     End Try
@@ -103,7 +102,7 @@ Namespace CreateSupport
                     ' 3) 아이콘(있으면) 포함해서 버튼 정의 생성
                     m_supportButton = controlDefs.AddButtonDefinition(
                         DisplayName:="Create Support",                         ' 리본에 보일 글자
-                        InternalName:="hye.CreateSupportButton",               ' 고유 이름(ID)
+                        InternalName:="hye.CreateSupportButton.v2",               ' 고유 이름(ID)
                         Classification:=CommandTypesEnum.kShapeEditCmdType,    ' 명령 종류(도형 편집)
                         ClientId:=Globals.AddInClientID(),                     ' Add-In GUID
                         DescriptionText:="서포트 자동 생성 도구",              ' 설명(상태줄 등)

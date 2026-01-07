@@ -27,7 +27,6 @@ Partial Class CreateSupportForm
         lblClose = New System.Windows.Forms.Label()
         pnlTitle = New System.Windows.Forms.Panel()
         logoBox = New System.Windows.Forms.PictureBox()
-        Preview = New System.Windows.Forms.PictureBox()
         nextbt = New System.Windows.Forms.Button()
         saddle = New System.Windows.Forms.CheckBox()
         grip = New System.Windows.Forms.CheckBox()
@@ -69,7 +68,7 @@ Partial Class CreateSupportForm
         splength = New System.Windows.Forms.TextBox()
         TextBox16 = New System.Windows.Forms.TextBox()
         Panel9 = New System.Windows.Forms.Panel()
-        TextBox17 = New System.Windows.Forms.TextBox()
+        af = New System.Windows.Forms.TextBox()
         TextBox18 = New System.Windows.Forms.TextBox()
         Panel10 = New System.Windows.Forms.Panel()
         filename = New System.Windows.Forms.TextBox()
@@ -77,7 +76,6 @@ Partial Class CreateSupportForm
         sbt = New System.Windows.Forms.CheckBox()
         pnlTitle.SuspendLayout()
         CType(logoBox, ComponentModel.ISupportInitialize).BeginInit()
-        CType(Preview, ComponentModel.ISupportInitialize).BeginInit()
         Panel1.SuspendLayout()
         Panel2.SuspendLayout()
         Panel3.SuspendLayout()
@@ -98,16 +96,16 @@ Partial Class CreateSupportForm
         lblTitle.ImageAlign = Drawing.ContentAlignment.TopCenter
         lblTitle.Location = New System.Drawing.Point(39, -1)
         lblTitle.Name = "lblTitle"
-        lblTitle.Size = New System.Drawing.Size(736, 28)
+        lblTitle.Size = New System.Drawing.Size(502, 28)
         lblTitle.TabIndex = 5
-        lblTitle.Text = "Creata Support"
+        lblTitle.Text = "Support"
         lblTitle.TextAlign = Drawing.ContentAlignment.MiddleLeft
         ' 
         ' lblClose
         ' 
         lblClose.Anchor = System.Windows.Forms.AnchorStyles.Top Or System.Windows.Forms.AnchorStyles.Right
         lblClose.Font = New System.Drawing.Font("맑은 고딕", 11.25F)
-        lblClose.Location = New System.Drawing.Point(781, 0)
+        lblClose.Location = New System.Drawing.Point(564, 0)
         lblClose.Name = "lblClose"
         lblClose.Size = New System.Drawing.Size(28, 28)
         lblClose.TabIndex = 3
@@ -122,7 +120,7 @@ Partial Class CreateSupportForm
         pnlTitle.Dock = System.Windows.Forms.DockStyle.Top
         pnlTitle.Location = New System.Drawing.Point(0, 0)
         pnlTitle.Name = "pnlTitle"
-        pnlTitle.Size = New System.Drawing.Size(809, 28)
+        pnlTitle.Size = New System.Drawing.Size(592, 28)
         pnlTitle.TabIndex = 0
         ' 
         ' logoBox
@@ -136,15 +134,6 @@ Partial Class CreateSupportForm
         logoBox.TabIndex = 14
         logoBox.TabStop = False
         ' 
-        ' Preview
-        ' 
-        Preview.Location = New System.Drawing.Point(12, 35)
-        Preview.Name = "Preview"
-        Preview.Size = New System.Drawing.Size(209, 233)
-        Preview.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom
-        Preview.TabIndex = 1
-        Preview.TabStop = False
-        ' 
         ' nextbt
         ' 
         nextbt.BackColor = Drawing.Color.FromArgb(CByte(78), CByte(86), CByte(100))
@@ -152,7 +141,7 @@ Partial Class CreateSupportForm
         nextbt.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         nextbt.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         nextbt.ForeColor = Drawing.Color.White
-        nextbt.Location = New System.Drawing.Point(323, 87)
+        nextbt.Location = New System.Drawing.Point(103, 87)
         nextbt.Name = "nextbt"
         nextbt.Size = New System.Drawing.Size(76, 27)
         nextbt.TabIndex = 10
@@ -168,7 +157,7 @@ Partial Class CreateSupportForm
         saddle.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         saddle.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         saddle.ForeColor = Drawing.Color.White
-        saddle.Location = New System.Drawing.Point(445, 116)
+        saddle.Location = New System.Drawing.Point(465, 93)
         saddle.Name = "saddle"
         saddle.Size = New System.Drawing.Size(76, 27)
         saddle.TabIndex = 11
@@ -185,7 +174,7 @@ Partial Class CreateSupportForm
         grip.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         grip.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         grip.ForeColor = Drawing.Color.White
-        grip.Location = New System.Drawing.Point(527, 116)
+        grip.Location = New System.Drawing.Point(465, 143)
         grip.Name = "grip"
         grip.Size = New System.Drawing.Size(76, 27)
         grip.TabIndex = 12
@@ -202,7 +191,7 @@ Partial Class CreateSupportForm
         btype.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         btype.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         btype.ForeColor = Drawing.Color.White
-        btype.Location = New System.Drawing.Point(323, 120)
+        btype.Location = New System.Drawing.Point(103, 120)
         btype.Name = "btype"
         btype.Size = New System.Drawing.Size(76, 27)
         btype.TabIndex = 13
@@ -226,7 +215,7 @@ Partial Class CreateSupportForm
         ' 
         Panel1.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel1.Controls.Add(ttext)
-        Panel1.Location = New System.Drawing.Point(322, 54)
+        Panel1.Location = New System.Drawing.Point(102, 54)
         Panel1.Name = "Panel1"
         Panel1.Size = New System.Drawing.Size(85, 27)
         Panel1.TabIndex = 16
@@ -236,7 +225,7 @@ Partial Class CreateSupportForm
         TextBox1.BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
         TextBox1.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox1.ForeColor = Drawing.Color.White
-        TextBox1.Location = New System.Drawing.Point(329, 37)
+        TextBox1.Location = New System.Drawing.Point(109, 37)
         TextBox1.Name = "TextBox1"
         TextBox1.Size = New System.Drawing.Size(69, 16)
         TextBox1.TabIndex = 17
@@ -248,7 +237,7 @@ Partial Class CreateSupportForm
         TextBox3.BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
         TextBox3.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox3.ForeColor = Drawing.Color.White
-        TextBox3.Location = New System.Drawing.Point(239, 37)
+        TextBox3.Location = New System.Drawing.Point(19, 37)
         TextBox3.Name = "TextBox3"
         TextBox3.Size = New System.Drawing.Size(69, 16)
         TextBox3.TabIndex = 19
@@ -259,7 +248,7 @@ Partial Class CreateSupportForm
         ' 
         Panel2.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel2.Controls.Add(mtext)
-        Panel2.Location = New System.Drawing.Point(232, 54)
+        Panel2.Location = New System.Drawing.Point(12, 54)
         Panel2.Name = "Panel2"
         Panel2.Size = New System.Drawing.Size(85, 27)
         Panel2.TabIndex = 20
@@ -280,7 +269,7 @@ Partial Class CreateSupportForm
         ' 
         Panel3.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel3.Controls.Add(stext)
-        Panel3.Location = New System.Drawing.Point(501, 54)
+        Panel3.Location = New System.Drawing.Point(281, 54)
         Panel3.Name = "Panel3"
         Panel3.Size = New System.Drawing.Size(85, 27)
         Panel3.TabIndex = 22
@@ -302,7 +291,7 @@ Partial Class CreateSupportForm
         TextBox4.BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
         TextBox4.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox4.ForeColor = Drawing.Color.White
-        TextBox4.Location = New System.Drawing.Point(508, 37)
+        TextBox4.Location = New System.Drawing.Point(288, 37)
         TextBox4.Name = "TextBox4"
         TextBox4.Size = New System.Drawing.Size(69, 16)
         TextBox4.TabIndex = 21
@@ -315,7 +304,7 @@ Partial Class CreateSupportForm
         TextBox2.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox2.Font = New System.Drawing.Font("맑은 고딕", 9.75F)
         TextBox2.ForeColor = Drawing.Color.White
-        TextBox2.Location = New System.Drawing.Point(236, 92)
+        TextBox2.Location = New System.Drawing.Point(16, 92)
         TextBox2.Name = "TextBox2"
         TextBox2.Size = New System.Drawing.Size(76, 18)
         TextBox2.TabIndex = 23
@@ -328,7 +317,7 @@ Partial Class CreateSupportForm
         TextBox5.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox5.Font = New System.Drawing.Font("맑은 고딕", 9.75F)
         TextBox5.ForeColor = Drawing.Color.White
-        TextBox5.Location = New System.Drawing.Point(236, 125)
+        TextBox5.Location = New System.Drawing.Point(16, 125)
         TextBox5.Name = "TextBox5"
         TextBox5.Size = New System.Drawing.Size(76, 18)
         TextBox5.TabIndex = 24
@@ -341,9 +330,9 @@ Partial Class CreateSupportForm
         fselect.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
         fselect.Controls.Add(PictureBox1)
         fselect.Controls.Add(Label1)
-        fselect.Location = New System.Drawing.Point(236, 190)
+        fselect.Location = New System.Drawing.Point(198, 92)
         fselect.Name = "fselect"
-        fselect.Size = New System.Drawing.Size(107, 27)
+        fselect.Size = New System.Drawing.Size(116, 27)
         fselect.TabIndex = 27
         ' 
         ' PictureBox1
@@ -386,7 +375,7 @@ Partial Class CreateSupportForm
         ' 
         Panel4.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel4.Controls.Add(length)
-        Panel4.Location = New System.Drawing.Point(353, 191)
+        Panel4.Location = New System.Drawing.Point(324, 93)
         Panel4.Name = "Panel4"
         Panel4.Size = New System.Drawing.Size(95, 27)
         Panel4.TabIndex = 28
@@ -397,7 +386,7 @@ Partial Class CreateSupportForm
         TextBox7.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox7.Font = New System.Drawing.Font("맑은 고딕", 9.75F)
         TextBox7.ForeColor = Drawing.Color.White
-        TextBox7.Location = New System.Drawing.Point(447, 200)
+        TextBox7.Location = New System.Drawing.Point(418, 102)
         TextBox7.Name = "TextBox7"
         TextBox7.Size = New System.Drawing.Size(27, 18)
         TextBox7.TabIndex = 29
@@ -409,7 +398,7 @@ Partial Class CreateSupportForm
         TextBox8.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox8.Font = New System.Drawing.Font("맑은 고딕", 9.75F)
         TextBox8.ForeColor = Drawing.Color.White
-        TextBox8.Location = New System.Drawing.Point(448, 250)
+        TextBox8.Location = New System.Drawing.Point(419, 152)
         TextBox8.Name = "TextBox8"
         TextBox8.Size = New System.Drawing.Size(27, 18)
         TextBox8.TabIndex = 31
@@ -419,7 +408,7 @@ Partial Class CreateSupportForm
         ' 
         Panel5.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel5.Controls.Add(Distance)
-        Panel5.Location = New System.Drawing.Point(354, 241)
+        Panel5.Location = New System.Drawing.Point(325, 143)
         Panel5.Name = "Panel5"
         Panel5.Size = New System.Drawing.Size(94, 27)
         Panel5.TabIndex = 30
@@ -443,7 +432,7 @@ Partial Class CreateSupportForm
         TextBox10.BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
         TextBox10.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox10.ForeColor = Drawing.Color.White
-        TextBox10.Location = New System.Drawing.Point(367, 223)
+        TextBox10.Location = New System.Drawing.Point(338, 125)
         TextBox10.Name = "TextBox10"
         TextBox10.Size = New System.Drawing.Size(69, 16)
         TextBox10.TabIndex = 32
@@ -461,9 +450,9 @@ Partial Class CreateSupportForm
         et1.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         et1.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         et1.ForeColor = Drawing.Color.White
-        et1.Location = New System.Drawing.Point(237, 228)
+        et1.Location = New System.Drawing.Point(198, 130)
         et1.Name = "et1"
-        et1.Size = New System.Drawing.Size(50, 40)
+        et1.Size = New System.Drawing.Size(55, 35)
         et1.TabIndex = 35
         et1.TextAlign = Drawing.ContentAlignment.MiddleCenter
         et1.UseVisualStyleBackColor = False
@@ -473,15 +462,15 @@ Partial Class CreateSupportForm
         et2.Appearance = System.Windows.Forms.Appearance.Button
         et2.BackColor = Drawing.Color.FromArgb(CByte(78), CByte(86), CByte(100))
         et2.BackgroundImage = CType(resources.GetObject("et2.BackgroundImage"), Drawing.Image)
-        et2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
+        et2.BackgroundImageLayout = System.Windows.Forms.ImageLayout.Center
         et2.CheckAlign = Drawing.ContentAlignment.MiddleCenter
         et2.FlatAppearance.BorderSize = 0
         et2.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         et2.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         et2.ForeColor = Drawing.Color.White
-        et2.Location = New System.Drawing.Point(294, 228)
+        et2.Location = New System.Drawing.Point(259, 130)
         et2.Name = "et2"
-        et2.Size = New System.Drawing.Size(50, 40)
+        et2.Size = New System.Drawing.Size(55, 35)
         et2.TabIndex = 36
         et2.TextAlign = Drawing.ContentAlignment.MiddleCenter
         et2.UseVisualStyleBackColor = False
@@ -495,7 +484,7 @@ Partial Class CreateSupportForm
         ok.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         ok.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         ok.ForeColor = Drawing.Color.White
-        ok.Location = New System.Drawing.Point(523, 241)
+        ok.Location = New System.Drawing.Point(21, 241)
         ok.Name = "ok"
         ok.Size = New System.Drawing.Size(80, 27)
         ok.TabIndex = 37
@@ -512,7 +501,7 @@ Partial Class CreateSupportForm
         cancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         cancel.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         cancel.ForeColor = Drawing.Color.White
-        cancel.Location = New System.Drawing.Point(612, 241)
+        cancel.Location = New System.Drawing.Point(110, 241)
         cancel.Name = "cancel"
         cancel.Size = New System.Drawing.Size(80, 27)
         cancel.TabIndex = 38
@@ -529,7 +518,7 @@ Partial Class CreateSupportForm
         apply.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         apply.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         apply.ForeColor = Drawing.Color.White
-        apply.Location = New System.Drawing.Point(700, 241)
+        apply.Location = New System.Drawing.Point(198, 241)
         apply.Name = "apply"
         apply.Size = New System.Drawing.Size(80, 27)
         apply.TabIndex = 39
@@ -541,7 +530,7 @@ Partial Class CreateSupportForm
         ' 
         Panel6.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel6.Controls.Add(Model)
-        Panel6.Location = New System.Drawing.Point(411, 54)
+        Panel6.Location = New System.Drawing.Point(191, 54)
         Panel6.Name = "Panel6"
         Panel6.Size = New System.Drawing.Size(85, 27)
         Panel6.TabIndex = 40
@@ -563,7 +552,7 @@ Partial Class CreateSupportForm
         TextBox11.BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
         TextBox11.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox11.ForeColor = Drawing.Color.White
-        TextBox11.Location = New System.Drawing.Point(418, 37)
+        TextBox11.Location = New System.Drawing.Point(198, 37)
         TextBox11.Name = "TextBox11"
         TextBox11.Size = New System.Drawing.Size(69, 16)
         TextBox11.TabIndex = 41
@@ -575,7 +564,7 @@ Partial Class CreateSupportForm
         Panel7.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel7.Controls.Add(TextBox14)
         Panel7.Controls.Add(TextBox12)
-        Panel7.Location = New System.Drawing.Point(590, 54)
+        Panel7.Location = New System.Drawing.Point(370, 54)
         Panel7.Name = "Panel7"
         Panel7.Size = New System.Drawing.Size(72, 27)
         Panel7.TabIndex = 43
@@ -609,7 +598,7 @@ Partial Class CreateSupportForm
         TextBox13.BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
         TextBox13.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox13.ForeColor = Drawing.Color.White
-        TextBox13.Location = New System.Drawing.Point(592, 37)
+        TextBox13.Location = New System.Drawing.Point(372, 37)
         TextBox13.Name = "TextBox13"
         TextBox13.Size = New System.Drawing.Size(69, 16)
         TextBox13.TabIndex = 42
@@ -620,7 +609,7 @@ Partial Class CreateSupportForm
         ' 
         Panel8.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel8.Controls.Add(splength)
-        Panel8.Location = New System.Drawing.Point(667, 54)
+        Panel8.Location = New System.Drawing.Point(447, 54)
         Panel8.Name = "Panel8"
         Panel8.Size = New System.Drawing.Size(60, 27)
         Panel8.TabIndex = 45
@@ -642,7 +631,7 @@ Partial Class CreateSupportForm
         TextBox16.BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
         TextBox16.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox16.ForeColor = Drawing.Color.White
-        TextBox16.Location = New System.Drawing.Point(668, 37)
+        TextBox16.Location = New System.Drawing.Point(448, 37)
         TextBox16.Name = "TextBox16"
         TextBox16.Size = New System.Drawing.Size(60, 16)
         TextBox16.TabIndex = 44
@@ -652,30 +641,30 @@ Partial Class CreateSupportForm
         ' Panel9
         ' 
         Panel9.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
-        Panel9.Controls.Add(TextBox17)
-        Panel9.Location = New System.Drawing.Point(733, 54)
+        Panel9.Controls.Add(af)
+        Panel9.Location = New System.Drawing.Point(513, 54)
         Panel9.Name = "Panel9"
         Panel9.Size = New System.Drawing.Size(60, 27)
         Panel9.TabIndex = 47
         ' 
-        ' TextBox17
+        ' af
         ' 
-        TextBox17.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
-        TextBox17.BorderStyle = System.Windows.Forms.BorderStyle.None
-        TextBox17.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
-        TextBox17.ForeColor = Drawing.Color.White
-        TextBox17.Location = New System.Drawing.Point(-1, 6)
-        TextBox17.Name = "TextBox17"
-        TextBox17.Size = New System.Drawing.Size(60, 18)
-        TextBox17.TabIndex = 15
-        TextBox17.TextAlign = System.Windows.Forms.HorizontalAlignment.Center
+        af.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
+        af.BorderStyle = System.Windows.Forms.BorderStyle.None
+        af.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
+        af.ForeColor = Drawing.Color.White
+        af.Location = New System.Drawing.Point(-1, 6)
+        af.Name = "af"
+        af.Size = New System.Drawing.Size(60, 18)
+        af.TabIndex = 15
+        af.TextAlign = System.Windows.Forms.HorizontalAlignment.Center
         ' 
         ' TextBox18
         ' 
         TextBox18.BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
         TextBox18.BorderStyle = System.Windows.Forms.BorderStyle.None
         TextBox18.ForeColor = Drawing.Color.White
-        TextBox18.Location = New System.Drawing.Point(734, 37)
+        TextBox18.Location = New System.Drawing.Point(514, 37)
         TextBox18.Name = "TextBox18"
         TextBox18.Size = New System.Drawing.Size(60, 16)
         TextBox18.TabIndex = 46
@@ -686,7 +675,7 @@ Partial Class CreateSupportForm
         ' 
         Panel10.BackColor = Drawing.Color.FromArgb(CByte(49), CByte(58), CByte(71))
         Panel10.Controls.Add(filename)
-        Panel10.Location = New System.Drawing.Point(480, 190)
+        Panel10.Location = New System.Drawing.Point(19, 195)
         Panel10.Name = "Panel10"
         Panel10.Size = New System.Drawing.Size(300, 30)
         Panel10.TabIndex = 51
@@ -712,7 +701,7 @@ Partial Class CreateSupportForm
         mbt.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         mbt.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         mbt.ForeColor = Drawing.Color.White
-        mbt.Location = New System.Drawing.Point(323, 153)
+        mbt.Location = New System.Drawing.Point(103, 153)
         mbt.Name = "mbt"
         mbt.Size = New System.Drawing.Size(76, 27)
         mbt.TabIndex = 52
@@ -729,7 +718,7 @@ Partial Class CreateSupportForm
         sbt.FlatStyle = System.Windows.Forms.FlatStyle.Flat
         sbt.Font = New System.Drawing.Font("맑은 고딕", 9.75F, Drawing.FontStyle.Regular, Drawing.GraphicsUnit.Point, CByte(129))
         sbt.ForeColor = Drawing.Color.White
-        sbt.Location = New System.Drawing.Point(239, 153)
+        sbt.Location = New System.Drawing.Point(19, 153)
         sbt.Name = "sbt"
         sbt.Size = New System.Drawing.Size(76, 27)
         sbt.TabIndex = 53
@@ -742,8 +731,8 @@ Partial Class CreateSupportForm
         AutoScaleDimensions = New System.Drawing.SizeF(7F, 15F)
         AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
         BackColor = Drawing.Color.FromArgb(CByte(59), CByte(67), CByte(83))
-        BackgroundImageLayout = System.Windows.Forms.ImageLayout.None
-        ClientSize = New System.Drawing.Size(809, 348)
+        BackgroundImageLayout = System.Windows.Forms.ImageLayout.Zoom
+        ClientSize = New System.Drawing.Size(592, 286)
         Controls.Add(sbt)
         Controls.Add(mbt)
         Controls.Add(Panel10)
@@ -778,7 +767,6 @@ Partial Class CreateSupportForm
         Controls.Add(grip)
         Controls.Add(saddle)
         Controls.Add(nextbt)
-        Controls.Add(Preview)
         Controls.Add(pnlTitle)
         ForeColor = Drawing.Color.Gainsboro
         FormBorderStyle = System.Windows.Forms.FormBorderStyle.None
@@ -787,7 +775,6 @@ Partial Class CreateSupportForm
         Text = "CreateSupportForm"
         pnlTitle.ResumeLayout(False)
         CType(logoBox, ComponentModel.ISupportInitialize).EndInit()
-        CType(Preview, ComponentModel.ISupportInitialize).EndInit()
         Panel1.ResumeLayout(False)
         Panel1.PerformLayout()
         Panel2.ResumeLayout(False)
@@ -818,7 +805,6 @@ Partial Class CreateSupportForm
     Friend WithEvents lblTitle As System.Windows.Forms.Label
     Friend WithEvents lblClose As System.Windows.Forms.Label
     Friend WithEvents pnlTitle As System.Windows.Forms.Panel
-    Friend WithEvents Preview As System.Windows.Forms.PictureBox
     Friend WithEvents nextbt As System.Windows.Forms.Button
     Friend WithEvents logoBox As System.Windows.Forms.PictureBox
     Friend WithEvents saddle As System.Windows.Forms.CheckBox
@@ -861,7 +847,7 @@ Partial Class CreateSupportForm
     Friend WithEvents splength As System.Windows.Forms.TextBox
     Friend WithEvents TextBox16 As System.Windows.Forms.TextBox
     Friend WithEvents Panel9 As System.Windows.Forms.Panel
-    Friend WithEvents TextBox17 As System.Windows.Forms.TextBox
+    Friend WithEvents af As System.Windows.Forms.TextBox
     Friend WithEvents TextBox18 As System.Windows.Forms.TextBox
     Friend WithEvents Panel10 As System.Windows.Forms.Panel
     Friend WithEvents filename As System.Windows.Forms.TextBox

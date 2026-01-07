@@ -63,87 +63,47 @@ Namespace CreateSupport
                 resourceCulture = value
             End Set
         End Property
-
-        '''<summary>
-        '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
-        '''</summary>
-        Friend Shared ReadOnly Property basicimage() As System.Drawing.Bitmap
-            Get
-                Dim obj As Object = ResourceManager.GetObject("basicimage", resourceCulture)
-                Return CType(obj, System.Drawing.Bitmap)
-            End Get
-        End Property
-
-        '''<summary>
-        '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
-        '''</summary>
-        Friend Shared ReadOnly Property ex1() As System.Drawing.Bitmap
-            Get
-                Dim obj As Object = ResourceManager.GetObject("ex1", resourceCulture)
-                Return CType(obj, System.Drawing.Bitmap)
-            End Get
-        End Property
-
-        '''<summary>
-        '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
-        '''</summary>
-        Friend Shared ReadOnly Property ex2() As System.Drawing.Bitmap
-            Get
-                Dim obj As Object = ResourceManager.GetObject("ex2", resourceCulture)
-                Return CType(obj, System.Drawing.Bitmap)
-            End Get
-        End Property
-
+        
         '''<summary>
         '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         '''</summary>
         Friend Shared ReadOnly Property face() As System.Drawing.Bitmap
             Get
                 Dim obj As Object = ResourceManager.GetObject("face", resourceCulture)
-                Return CType(obj, System.Drawing.Bitmap)
+                Return CType(obj,System.Drawing.Bitmap)
             End Get
         End Property
-
+        
         '''<summary>
         '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         '''</summary>
-        Friend Shared ReadOnly Property gripimage() As System.Drawing.Bitmap
+        Friend Shared ReadOnly Property icon_flush_ex() As System.Drawing.Bitmap
             Get
-                Dim obj As Object = ResourceManager.GetObject("gripimage", resourceCulture)
-                Return CType(obj, System.Drawing.Bitmap)
+                Dim obj As Object = ResourceManager.GetObject("icon_flush_ex", resourceCulture)
+                Return CType(obj,System.Drawing.Bitmap)
             End Get
         End Property
-
+        
         '''<summary>
         '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         '''</summary>
-        Friend Shared ReadOnly Property logo() As System.Drawing.Bitmap
+        Friend Shared ReadOnly Property icon_mate_ex() As System.Drawing.Bitmap
             Get
-                Dim obj As Object = ResourceManager.GetObject("logo", resourceCulture)
-                Return CType(obj, System.Drawing.Bitmap)
+                Dim obj As Object = ResourceManager.GetObject("icon_mate_ex", resourceCulture)
+                Return CType(obj,System.Drawing.Bitmap)
             End Get
         End Property
-
+        
         '''<summary>
         '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         '''</summary>
-        Friend Shared ReadOnly Property saddleimage() As System.Drawing.Bitmap
+        Friend Shared ReadOnly Property support32() As System.Drawing.Bitmap
             Get
-                Dim obj As Object = ResourceManager.GetObject("saddleimage", resourceCulture)
-                Return CType(obj, System.Drawing.Bitmap)
+                Dim obj As Object = ResourceManager.GetObject("support32", resourceCulture)
+                Return CType(obj,System.Drawing.Bitmap)
             End Get
         End Property
-
-        '''<summary>
-        '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
-        '''</summary>
-        Friend Shared ReadOnly Property surpport32() As System.Drawing.Bitmap
-            Get
-                Dim obj As Object = ResourceManager.GetObject("surpport32", resourceCulture)
-                Return CType(obj, System.Drawing.Bitmap)
-            End Get
-        End Property
-
+        
         '''<summary>
         '''  System.Drawing.Bitmap 형식의 지역화된 리소스를 찾습니다.
         '''</summary>

@@ -1,4 +1,4 @@
-﻿' ========================= Part 1/2 =========================
+﻿' ========================= CreateSupportForm.vb =========================
 Imports System.Windows.Forms
 Imports System.Collections.Generic
 Imports System.Runtime.InteropServices
@@ -9,6 +9,7 @@ Imports IO = System.IO
 Public Class CreateSupportForm
 
 #Region "A. 공통/Win32 + 버튼 기본 동작(옵션/토글/다음) "
+
     ' [NEW] Apply 후 UI/상태를 "초기 상태"로 되돌림
     Private Sub ResetUIToInitialState()
         Try
@@ -21,18 +22,13 @@ Public Class CreateSupportForm
             If splength IsNot Nothing Then splength.Text = ""
             If filename IsNot Nothing Then filename.Text = ""
 
-            ' Distance는 기본 0으로(원하면 0.00 말고 기본값으로 바꿔도 됨)
+            ' Distance 기본값
             If Distance IsNot Nothing Then Distance.Text = "0.00"
 
             ' 옵션/토글 버튼 초기화
             ResetAllButtons()
             UpdateOptionButtons()
             InitSingleMultiToggle()
-
-            ' 미리보기 이미지 초기화(기존 로고 규칙 그대로)
-            If Preview IsNot Nothing Then
-                Preview.Image = CreateSupport.Resource1.logo
-            End If
 
         Catch
         End Try
@@ -59,13 +55,36 @@ Public Class CreateSupportForm
 
     ' --- LegType 순환(nextbt) ---
     Private Sub nextbt_Click(sender As Object, e As EventArgs) Handles nextbt.Click
+
         Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
+
+        ' ----------------------------
+        ' PVC: CF <-> GF 순환 (기본 CF)
+        ' ----------------------------
+        If mat = "PVC" Then
+            If m_legCodePVC = "CF" Then
+                m_legCodePVC = "GF"
+            Else
+                m_legCodePVC = "CF"
+            End If
+
+            UpdateFilename()
+
+            If m_supportFace IsNot Nothing Then
+                Me.BeginInvoke(New Action(AddressOf RunPreviewPlacement))
+            End If
+            Return
+        End If
+
+
+        ' ----------------------------
+        ' STS: 기존 로직 그대로 (SF->SS->SR->SL 순환)
+        ' ----------------------------
         If mat <> "STS" Then
             UpdateFilename()
             Return
         End If
 
-        ' STS: SF -> SS -> SR -> SL -> SF ...
         Select Case m_legCode
             Case "SF" : m_legCode = "SS"
             Case "SS" : m_legCode = "SR"
@@ -78,8 +97,8 @@ Public Class CreateSupportForm
         If m_supportFace IsNot Nothing Then
             Me.BeginInvoke(New Action(AddressOf RunPreviewPlacement))
         End If
-
     End Sub
+
 
     ' --- Win32 ---
     <DllImport("user32.dll")>
@@ -100,6 +119,7 @@ Public Class CreateSupportForm
         ok.Checked = False
         cancel.Checked = False
         apply.Checked = False
+
         If sbt IsNot Nothing Then sbt.Checked = True
         If mbt IsNot Nothing Then mbt.Checked = False
     End Sub
@@ -107,8 +127,20 @@ Public Class CreateSupportForm
     Private Sub UpdateOptionButtons()
         Dim enableMain As Boolean = Not (saddle.Checked OrElse grip.Checked)
 
-        btype.Enabled = enableMain
+        Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
+
+        ' nextbt는 PVC도 써야 하니까 enableMain 유지
         nextbt.Enabled = enableMain
+
+        ' btype은 PVC면 항상 잠금
+        If mat = "PVC" Then
+            btype.Enabled = False
+            btype.Checked = False
+            btype.BackColor = Draw.Color.FromArgb(60, 60, 60)
+        Else
+            btype.Enabled = enableMain
+        End If
+
 
         If enableMain Then
             btype.BackColor = cBtnNormal
@@ -119,13 +151,6 @@ Public Class CreateSupportForm
             nextbt.BackColor = Draw.Color.FromArgb(60, 60, 60)
         End If
 
-        If saddle.Checked Then
-            Preview.Image = CreateSupport.Resource1.saddleimage
-        ElseIf grip.Checked Then
-            Preview.Image = CreateSupport.Resource1.gripimage
-        Else
-            Preview.Image = CreateSupport.Resource1.logo
-        End If
     End Sub
 
     Private Sub btype_CheckedChanged(sender As Object, e As EventArgs) Handles btype.CheckedChanged
@@ -154,12 +179,9 @@ Public Class CreateSupportForm
         End Try
     End Sub
 
-
-
 #End Region
 
 #Region "B. Single/Multi 토글(sbt/mbt) + 호버/클릭 색상"
-
 
     Private isUpdatingSM As Boolean = False
 
@@ -185,6 +207,7 @@ Public Class CreateSupportForm
         Finally
             isUpdatingSM = False
         End Try
+
         UpdateFilename()
 
         ' 이벤트 연결(중복 방지)
@@ -196,6 +219,7 @@ Public Class CreateSupportForm
             RemoveHandler sbt.MouseLeave, AddressOf SM_MouseLeave
             RemoveHandler sbt.MouseDown, AddressOf SM_MouseDown
             RemoveHandler sbt.MouseUp, AddressOf SM_MouseUp
+
             AddHandler sbt.MouseEnter, AddressOf SM_MouseEnter
             AddHandler sbt.MouseLeave, AddressOf SM_MouseLeave
             AddHandler sbt.MouseDown, AddressOf SM_MouseDown
@@ -210,6 +234,7 @@ Public Class CreateSupportForm
             RemoveHandler mbt.MouseLeave, AddressOf SM_MouseLeave
             RemoveHandler mbt.MouseDown, AddressOf SM_MouseDown
             RemoveHandler mbt.MouseUp, AddressOf SM_MouseUp
+
             AddHandler mbt.MouseEnter, AddressOf SM_MouseEnter
             AddHandler mbt.MouseLeave, AddressOf SM_MouseLeave
             AddHandler mbt.MouseDown, AddressOf SM_MouseDown
@@ -232,6 +257,7 @@ Public Class CreateSupportForm
         Finally
             isUpdatingSM = False
         End Try
+        UpdateFilename()
     End Sub
 
     Private Sub mbt_CheckedChanged(sender As Object, e As EventArgs)
@@ -280,7 +306,6 @@ Public Class CreateSupportForm
 
 #Region "C. 옵션 체크(Saddle/Grip) + UI 색상"
 
-
     Private Sub saddle_CheckedChanged(sender As Object, e As EventArgs) Handles saddle.CheckedChanged
         If saddle.Checked Then grip.Checked = False
         UpdateOptionButtons()
@@ -298,20 +323,43 @@ Public Class CreateSupportForm
     Private ReadOnly cBtnHover As Draw.Color = Draw.Color.FromArgb(95, 105, 120)
     Private ReadOnly cBtnClick As Draw.Color = Draw.Color.FromArgb(60, 68, 80)
 
-
 #End Region
 
 #Region "D. Inventor 선택/하이라이트 상태(변수) + Mate/Flush 변수"
+    ' =========================
+    ' [NEW] 예외 무시 안전 실행 유틸
+    ' =========================
+    Private Sub SafeRun(act As Action)
+        Try
+            act()
+        Catch
+        End Try
+    End Sub
+
+
+    ' [NEW] 축 슬라이드/날아감 방지용: 축방향 위치 잠금(평면 구속)
+    Private m_tempAxialLockPlane As WorkPlane = Nothing
+    Private m_tempAxialLockConstraint As AssemblyConstraint = Nothing
+
+    ' [NEW] 현재 미리보기로 쓰고 있는 Support(어셈블리 폴더 ipt) 경로
+    Private m_currentSupportAsmPath As String = ""
+
+    ' [NEW] 현재 미리보기(임시배치)로 사용 중인 파일 경로(어셈블리 폴더 안 ipt)
+    Private m_currentPreviewSupportAsmPath As String = ""
+    Private m_currentPreviewSadAsmPath As String = ""
+
     ' [NEW] 사용자가 모델을 클릭한 3D 지점(어셈블리 좌표)
     Private m_lastPickPoint As Inventor.Point = Nothing
 
-
     ' [NEW] 임시로 복사/생성한 파일 목록(취소/X 시 삭제, Apply/OK 시 유지)
     Private m_tempCreatedFiles As New List(Of String)
+
     ' [NEW] 현재 배치된 SAD의 소스 경로 기억(같으면 재배치/Replace 안 함)
     Private m_currentSadSourcePath As String = ""
+
     Private m_blueHighlight As HighlightSet
     Private m_greenHighlight As HighlightSet
+
     ' 축대축(중심축) 전용 임시 구속
     Private m_tempAxisConstraint As AssemblyConstraint = Nothing
 
@@ -319,6 +367,11 @@ Public Class CreateSupportForm
     Private m_tempMateFlushConstraint As AssemblyConstraint = Nothing
 
     Private m_tempWorkAxis As WorkAxis = Nothing
+
+    ' [NEW] 스폰 위치 고정용(축 미끄럼 방지)
+    Private m_tempSpawnWorkPoint As WorkPoint = Nothing
+    Private m_tempSpawnConstraint As AssemblyConstraint = Nothing
+
 
     ' Mate/Flush 면 하이라이트(확정 전까지 유지)
     Private m_hlBaseFace As HighlightSet = Nothing
@@ -332,16 +385,21 @@ Public Class CreateSupportForm
 
     Private m_selectedComponent As ComponentOccurrence
     Private m_centerPoint As Inventor.Point
-    Private m_supportFace As Face
+    Private m_supportFace As Object   ' Face 또는 FaceProxy
 
     Private m_supportCompHighlight As HighlightSet
     Private m_supportFaceHighlight As HighlightSet
 
-    ' [파일명용] STS LegType 코드 (기본 SF)
+    ' STS LegType 코드 (기본 SF)
     Private m_legCode As String = "SF"
+
+    ' PVC FootType 코드 (기본 CF)  CF <-> GF
+    Private m_legCodePVC As String = "CF"
+
 
     ' sbt/mbt 토글 중 재귀 방지(현재 코드에 존재)
     Private m_isToggleUpdating As Boolean = False
+
     ' [NEW] 찾은 support 파일 경로(Apply에서 사용)
     Private m_resolvedSupportPath As String = ""
 
@@ -358,12 +416,9 @@ Public Class CreateSupportForm
     ' [NEW] 찾은 SAD 파일 경로
     Private m_resolvedSadPath As String = ""
 
-
-
 #End Region
 
 #Region "E. SUPPORT 선택 헬퍼(SetSupportComponent / CenterPoint)"
-
 
     Private Sub SetSupportComponent(comp As ComponentOccurrence)
         m_selectedComponent = comp
@@ -414,22 +469,29 @@ Public Class CreateSupportForm
         End Try
     End Function
 
-
-
 #End Region
 
 #Region "F. Preview 상태(변수만)"
+    ' [NEW] SAD는 "인치(튜브)"면 TU로 찾고, "A(파이프)"면 PI로 찾는다
+    Private Function GetSadTypeCode() As String
+        Dim s As String = If(stext.Text, "").Trim()
 
+        If s.Contains("""") Then
+            Return "TU"   ' 1/2", 3/4", 1" ...
+        End If
 
-    Private previewImages As List(Of Draw.Image)
-    Private currentPreviewIndex As Integer = 0
+        If s.ToUpper().EndsWith("A") Then
+            Return "PI"   ' 15A, 20A, 25A ...
+        End If
 
+        ' 애매하면 기존 Category 기반
+        Return ConvertTypeToCode(ttext.Text)
+    End Function
 
 
 #End Region
 
 #Region "G. Form LifeCycle(Load/Shown/Close) + Cancel"
-
 
     Private Sub CreateSupportForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Me.DoubleBuffered = True
@@ -460,33 +522,14 @@ Public Class CreateSupportForm
             AddHandler lblClose.MouseLeave, AddressOf lblClose_MouseLeave
         End If
 
-        Try
-            Dim bmp As New Draw.Bitmap(CreateSupport.Resource1.logo)
-            bmp.MakeTransparent(Draw.Color.Black)
-            logoBox.Image = bmp
-            logoBox.SizeMode = PictureBoxSizeMode.Zoom
-            logoBox.Parent = pnlTitle
-            lblTitle.Parent = pnlTitle
-        Catch
-        End Try
-
-        previewImages = New List(Of Draw.Image) From {
-            CreateSupport.Resource1.test1,
-            CreateSupport.Resource1.test2,
-            CreateSupport.Resource1.test3,
-            CreateSupport.Resource1.test4
-        }
-        If previewImages.Count > 0 Then Preview.Image = previewImages(0)
-
         AddHandler Distance.MouseWheel, AddressOf Distance_MouseWheel
         AddHandler Distance.TextChanged, AddressOf Distance_TextChanged
 
-        ' [NEW] 드래그로 창 이동 (원하는 영역을 잡고 끌기)
+        ' [NEW] 드래그로 창 이동
         AddHandler Me.MouseDown, AddressOf DragArea_MouseDown
         AddHandler Me.MouseMove, AddressOf DragArea_MouseMove
         AddHandler Me.MouseUp, AddressOf DragArea_MouseUp
 
-        ' 타이틀/상단 패널이 있으면 같이 연결(있을 때만)
         If pnlTitle IsNot Nothing Then
             AddHandler pnlTitle.MouseDown, AddressOf DragArea_MouseDown
             AddHandler pnlTitle.MouseMove, AddressOf DragArea_MouseMove
@@ -508,7 +551,9 @@ Public Class CreateSupportForm
         ResetAllButtons()
         UpdateOptionButtons()
         InitSingleMultiToggle()
+        ApplyMaterialRules()   ' ★ 추가
         UpdateFilename()
+
     End Sub
 
     Private Sub CreateSupportForm_Shown(sender As Object, e As EventArgs) Handles MyBase.Shown
@@ -532,125 +577,86 @@ Public Class CreateSupportForm
         ClearAll_OnClose()
     End Sub
 
-    Private Sub ClearPreviewAndHighlights()
-        Try
-            m_blueHighlight?.Delete()
-        Catch
-        End Try
-        m_blueHighlight = Nothing
-
-        Try
-            m_greenHighlight?.Delete()
-        Catch
-        End Try
-        m_greenHighlight = Nothing
-
-        Try
-            m_supportCompHighlight?.Delete()
-        Catch
-        End Try
-        m_supportCompHighlight = Nothing
-
-        Try
-            m_supportFaceHighlight?.Delete()
-        Catch
-        End Try
-        m_supportFaceHighlight = Nothing
-        ' [NEW] 임시 배치된 Support Occurrence 삭제 (Cancel / FormClosed 시)
-        Try
-            If m_supportOcc IsNot Nothing Then m_supportOcc.Delete()
-        Catch
-        End Try
-        m_supportOcc = Nothing
-
-        ' [NEW] 임시 배치된 SAD Occurrence 삭제
-        Try
-            If m_sadOcc IsNot Nothing Then m_sadOcc.Delete()
-        Catch
-        End Try
-        m_sadOcc = Nothing
-
-        ' [NEW] 축대축 임시 구속 2개 삭제
-        Try
-            If m_tempAxisConstraint_Support IsNot Nothing Then m_tempAxisConstraint_Support.Delete()
-        Catch
-        End Try
-        m_tempAxisConstraint_Support = Nothing
-
-        Try
-            If m_tempAxisConstraint_SAD IsNot Nothing Then m_tempAxisConstraint_SAD.Delete()
-        Catch
-        End Try
-        m_tempAxisConstraint_SAD = Nothing
-
-        ' Mate/Flush 임시 구속 삭제
-        Try
-            If m_tempMateFlushConstraint IsNot Nothing Then m_tempMateFlushConstraint.Delete()
-        Catch
-        End Try
-        m_tempMateFlushConstraint = Nothing
-
-        ' Mate/Flush 면 하이라이트 삭제
-        Try
-            m_hlBaseFace?.Delete()
-        Catch
-        End Try
-        m_hlBaseFace = Nothing
-
-        Try
-            m_hlTargetFace?.Delete()
-        Catch
-        End Try
-        m_hlTargetFace = Nothing
-
-        ' [NEW] 임시 WorkAxis 삭제
-        Try
-            If m_tempWorkAxis IsNot Nothing Then
-                m_tempWorkAxis.Delete()
-            End If
-        Catch
-        End Try
-        m_tempWorkAxis = Nothing
-
-        m_baseFace = Nothing
-        m_targetFace = Nothing
-
-        m_selectedComponent = Nothing
-        m_centerPoint = Nothing
-        m_supportFace = Nothing
-
-        isObjectSelectionActive = False
-    End Sub
     ' ===================== [NEW] 임시 생성 파일 삭제 유틸 =====================
     Private Sub DeleteTempCreatedFiles()
         Try
+            ' ★ Inventor가 문서를 열어둔 상태면 File.Delete가 실패한다.
+            '   따라서 삭제 전에 열려있으면 닫고, 그래도 안 되면 조용히 스킵한다.
             For Each p In m_tempCreatedFiles
+                If String.IsNullOrWhiteSpace(p) Then Continue For
+
                 If IO.File.Exists(p) Then
-                    IO.File.Delete(p)
+                    ' 열려있으면 닫기(잠김 해제)
+                    TryCloseDocumentIfOpen(p)
+
+                    ' 그래도 잠겨있을 수 있으니 Try로 보호
+                    Try
+                        IO.File.Delete(p)
+                    Catch
+                    End Try
                 End If
             Next
         Catch
         End Try
+
         m_tempCreatedFiles.Clear()
     End Sub
+
+    ' [NEW] 파일이 Inventor에서 열려있으면 닫아서 삭제 가능하게 함
+    Private Sub TryCloseDocumentIfOpen(fullPath As String)
+        Try
+            If Globals.g_inventorApplication Is Nothing Then Return
+            If String.IsNullOrWhiteSpace(fullPath) Then Return
+
+            Dim docs = Globals.g_inventorApplication.Documents
+            If docs Is Nothing Then Return
+
+            For i As Integer = docs.Count To 1 Step -1
+                Dim d As Document = Nothing
+                Try
+                    d = docs.Item(i)
+                Catch
+                    Continue For
+                End Try
+                If d Is Nothing Then Continue For
+
+                Dim p As String = ""
+                Try
+                    p = d.FullFileName
+                Catch
+                    Continue For
+                End Try
+                If String.IsNullOrWhiteSpace(p) Then Continue For
+
+                If String.Equals(p, fullPath, StringComparison.OrdinalIgnoreCase) Then
+                    Try
+                        d.Close(True)
+                    Catch
+                    End Try
+                    Exit For
+                End If
+
+            Next
+        Catch
+        End Try
+    End Sub
+
+
     ' [NEW] Cancel/X/닫기 시: 임시배치(occ) + 임시구속 + 임시축 + 하이라이트까지 전부 정리
     Private Sub ClearAll_OnClose()
 
-        ' 임시 배치 Support Occ 삭제
         Try
             If m_supportOcc IsNot Nothing Then m_supportOcc.Delete()
         Catch
         End Try
         m_supportOcc = Nothing
 
-        ' 임시 배치 SAD Occ 삭제
         Try
             If m_sadOcc IsNot Nothing Then m_sadOcc.Delete()
         Catch
         End Try
         m_sadOcc = Nothing
 
-        ' 축대축 임시 구속 삭제 (Support / SAD)
         Try
             If m_tempAxisConstraint_Support IsNot Nothing Then m_tempAxisConstraint_Support.Delete()
         Catch
@@ -663,24 +669,47 @@ Public Class CreateSupportForm
         End Try
         m_tempAxisConstraint_SAD = Nothing
 
-        ' Mate/Flush 임시 구속 삭제
         Try
             If m_tempMateFlushConstraint IsNot Nothing Then m_tempMateFlushConstraint.Delete()
         Catch
         End Try
         m_tempMateFlushConstraint = Nothing
 
-        ' 임시 WorkAxis 삭제
         Try
             If m_tempWorkAxis IsNot Nothing Then m_tempWorkAxis.Delete()
         Catch
         End Try
         m_tempWorkAxis = Nothing
 
-        ' (요구사항) 하이라이트는 Cancel/OK/Apply/X 때만 제거
+        ' [NEW] 스폰/축방향 잠금용 구속/WorkPoint/WorkPlane 삭제
+        Try
+            If m_tempSpawnConstraint IsNot Nothing Then m_tempSpawnConstraint.Delete()
+        Catch
+        End Try
+        m_tempSpawnConstraint = Nothing
+
+        Try
+            If m_tempSpawnWorkPoint IsNot Nothing Then m_tempSpawnWorkPoint.Delete()
+        Catch
+        End Try
+        m_tempSpawnWorkPoint = Nothing
+
+        Try
+            If m_tempAxialLockConstraint IsNot Nothing Then m_tempAxialLockConstraint.Delete()
+        Catch
+        End Try
+        m_tempAxialLockConstraint = Nothing
+
+        Try
+            If m_tempAxialLockPlane IsNot Nothing Then m_tempAxialLockPlane.Delete()
+        Catch
+        End Try
+        m_tempAxialLockPlane = Nothing
+
+
+
         ClearMateFlushFaceHighlights()
 
-        ' 기타 하이라이트/상태 정리
         Try
             If m_supportCompHighlight IsNot Nothing Then m_supportCompHighlight.Delete()
         Catch
@@ -698,7 +727,7 @@ Public Class CreateSupportForm
         m_selectedComponent = Nothing
         m_centerPoint = Nothing
         m_supportFace = Nothing
-        ' [NEW] Cancel/X/닫기 시: 임시 생성 파일 삭제
+
         DeleteTempCreatedFiles()
     End Sub
 
@@ -714,24 +743,90 @@ Public Class CreateSupportForm
             Return
         End If
 
-        ' 1) 확정(Commit): 임시 구속/Occ는 Delete하지 않고 "변수만 해제"해서 남김
+        ' 1) 확정(Commit)
+        '   - 현재 미리보기 TMP를 final로 승격/합류한 뒤,
+        '   - Occurrence는 final로 Replace (확정 후 공유는 여기서만 허용)
+        If m_supportOcc IsNot Nothing Then
+
+            ' ★ OK 확정 직전: 현재 TMP(메모리)의 파라미터를 디스크에 저장
+            Try
+                Dim partDef As PartComponentDefinition = TryCast(m_supportOcc.Definition, PartComponentDefinition)
+                Dim pdoc As PartDocument = TryCast(partDef.Document, PartDocument)
+                If pdoc IsNot Nothing Then
+                    Try : pdoc.Update2(True) : Catch : End Try
+                    Try : pdoc.Save2(True) : Catch : End Try
+                End If
+            Catch
+            End Try
+
+            Dim finalFileName As String = If(filename.Text, "").Trim()
+            If finalFileName <> "" AndAlso m_currentPreviewSupportAsmPath <> "" Then
+
+                Dim finalPath As String = CommitPreviewToFinal(m_currentPreviewSupportAsmPath, finalFileName)
+
+                If finalPath <> "" Then
+                    Try
+                        m_supportOcc.Replace(finalPath, True)
+                        Globals.g_inventorApplication.ActiveView.Update()
+                    Catch
+                    End Try
+                End If
+            End If
+        End If
+
+
+        SafeRun(Sub()
+                    If m_tempAxisConstraint_Support IsNot Nothing Then m_tempAxisConstraint_Support.Delete()
+                End Sub)
+
+        SafeRun(Sub()
+                    If m_tempAxisConstraint_SAD IsNot Nothing Then m_tempAxisConstraint_SAD.Delete()
+                End Sub)
+
+        SafeRun(Sub()
+                    If m_tempMateFlushConstraint IsNot Nothing Then m_tempMateFlushConstraint.Delete()
+                End Sub)
+
+        SafeRun(Sub()
+                    If m_tempSpawnConstraint IsNot Nothing Then m_tempSpawnConstraint.Delete()
+                End Sub)
+
+        SafeRun(Sub()
+                    If m_tempSpawnWorkPoint IsNot Nothing Then m_tempSpawnWorkPoint.Delete()
+                End Sub)
+
+        SafeRun(Sub()
+                    If m_tempAxialLockConstraint IsNot Nothing Then m_tempAxialLockConstraint.Delete()
+                End Sub)
+
+        SafeRun(Sub()
+                    If m_tempAxialLockPlane IsNot Nothing Then m_tempAxialLockPlane.Delete()
+                End Sub)
+
+
         m_tempAxisConstraint_Support = Nothing
         m_tempAxisConstraint_SAD = Nothing
         m_tempMateFlushConstraint = Nothing
+        m_tempSpawnConstraint = Nothing
+        m_tempSpawnWorkPoint = Nothing
+        m_tempAxialLockConstraint = Nothing
+        m_tempAxialLockPlane = Nothing
+
 
         m_supportOcc = Nothing
         m_sadOcc = Nothing
         m_currentSadSourcePath = ""
-        ' Mate/Flush 면 하이라이트 제거(요구사항)
+        m_currentSupportAsmPath = ""
+        m_currentPreviewSupportAsmPath = ""
+
         ClearMateFlushFaceHighlights()
 
-        ' Apply에서만 저장(경고창 제거 핵심)
+        ' Apply에서만 저장
         SaveTempCreatedFiles()
-
-        ' Apply는 "생성 유지"
         m_tempCreatedFiles.Clear()
 
-        ' 2) 다음 선택 준비: Inventor Pick 초기화
+
+        ' 2) 다음 선택 준비
         Try
             If Globals.g_inventorApplication IsNot Nothing Then
                 SetForegroundWindow(New IntPtr(Globals.g_inventorApplication.MainFrameHWND))
@@ -747,295 +842,334 @@ Public Class CreateSupportForm
         m_baseFace = Nothing
         m_targetFace = Nothing
 
-        ' 4) UI 초기 상태로 리셋(텍스트 박스 포함)
+        ' 4) UI 초기 상태 리셋
         ResetUIToInitialState()
 
-        ' 5) 바로 다음 TUBE/PIPE 선택 루프로 복귀
+        ' 5) 바로 다음 선택 루프로 복귀
         isObjectSelectionActive = True
         Me.BeginInvoke(New Action(AddressOf RunAnalysisSequence))
     End Sub
 
     ' [NEW] OK: 임시 배치를 확정하고 창 닫기
     Private Sub ok_Click(sender As Object, e As EventArgs) Handles ok.Click
-        ' 배치된 게 있다면 확정
+
+        ' OK도 Apply처럼 확정(Commit) 수행 후 닫기
+        If m_supportOcc IsNot Nothing Then
+
+            Dim finalFileName As String = If(filename.Text, "").Trim()
+            If finalFileName <> "" AndAlso m_currentPreviewSupportAsmPath <> "" Then
+
+                Dim finalPath As String = CommitPreviewToFinal(m_currentPreviewSupportAsmPath, finalFileName)
+
+                If finalPath <> "" Then
+                    Try
+                        m_supportOcc.Replace(finalPath, True)
+                        Globals.g_inventorApplication.ActiveView.Update()
+                    Catch
+                    End Try
+                End If
+            End If
+        End If
+
         If m_supportOcc IsNot Nothing OrElse m_sadOcc IsNot Nothing Then
             m_tempAxisConstraint_Support = Nothing
             m_tempAxisConstraint_SAD = Nothing
             m_tempMateFlushConstraint = Nothing
+            m_tempSpawnConstraint = Nothing
+            m_tempSpawnWorkPoint = Nothing
 
             m_supportOcc = Nothing
             m_sadOcc = Nothing
             m_currentSadSourcePath = ""
+            m_currentPreviewSupportAsmPath = ""
+            m_currentSupportAsmPath = ""
         End If
 
         ClearMateFlushFaceHighlights()
         SaveTempCreatedFiles()
         m_tempCreatedFiles.Clear()
 
-        ' 창 닫기
         Me.Close()
     End Sub
 
-    ' [NEW] 실제 배치 및 미리보기 수행 (기존 Apply 로직 이동 + 재배치 시 기존 삭제 기능 추가)
     Private Sub RunPreviewPlacement()
+        Try
 
-        ' 기존 미리보기 Occ가 있으면 Delete보다 Replace를 우선 사용
-        Dim needNewOcc As Boolean = (m_supportOcc Is Nothing)
+            ' ★ mat 먼저 선언 (이게 핵심)
+            Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
 
-        ' 2) Support 파일 찾기
-        m_resolvedSupportPath = FindSupportFile()
-        If String.IsNullOrWhiteSpace(m_resolvedSupportPath) Then
-            MessageBox.Show(
-            "조건에 맞는 Support 파일을 찾지 못했습니다." & vbCrLf &
-            "폴더: " & GetSupportFolderPath() & vbCrLf &
-            "키: STS / " & ConvertSingleMultiToCode() & " / " & GetLegCode() & " / " & ConvertBoltToCode(),
-            "찾기 실패"
-        )
-            Return
-        End If
-
-        ' 2-1) STS일 때만 SAD 파일 추가로 찾기 (STS_SUPPORT 폴더 바로 아래)
-        m_resolvedSadPath = ""
-        Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
-
-        If mat = "STS" Then
-            Dim stsFolder As String = IO.Path.Combine(SUPPORT_BASE_PATH, "STS_SUPPORT")
-            m_resolvedSadPath = FindStsSadFile(stsFolder)
-
-            If String.IsNullOrWhiteSpace(m_resolvedSadPath) Then
+            m_resolvedSupportPath = FindSupportFile()
+            If String.IsNullOrWhiteSpace(m_resolvedSupportPath) Then
                 MessageBox.Show(
-                "SAD 포함 Support 파일을 찾지 못했습니다." & vbCrLf &
-                "폴더: " & stsFolder & vbCrLf &
-                "키: STS / " & ConvertSingleMultiToCode() & " / " & ConvertTypeToCode(ttext.Text) & " / SAD / " & ConvertSizeToCode(stext.Text),
-                "SAD 찾기 실패"
-            )
-                ' SAD는 선택 기능 → 못 찾으면 그냥 Support만 진행
+        "조건에 맞는 Support 파일을 찾지 못했습니다." & vbCrLf &
+        "폴더: " & GetSupportFolderPath() & vbCrLf &
+        "키: " & mat & " / " & ConvertSingleMultiToCode() & " / " & GetLegCode() & " / " & ConvertBoltToCode(),
+        "찾기 실패"
+    )
+                Return
+            End If
+
+            m_resolvedSadPath = ""
+            If mat = "STS" Then
+                Dim stsFolder As String = IO.Path.Combine(SUPPORT_BASE_PATH, "STS_SUPPORT")
+                m_resolvedSadPath = FindStsSadFile(stsFolder)
+                If String.IsNullOrWhiteSpace(m_resolvedSadPath) Then
+                    m_resolvedSadPath = ""
+                End If
+            Else
+                ' PVC 포함: SAD 없음
                 m_resolvedSadPath = ""
             End If
-        End If
 
-        ' 3) 어셈블리 배치(기존 Support)
-        '    ★ 파일명은 splength.Text 기반으로 이미 filename.Text가 만들어져 있음 (여기는 그대로 사용)
-        Dim newFileName As String = If(filename.Text, "").Trim()
-        If String.IsNullOrWhiteSpace(newFileName) Then Return
 
-        Dim asm As AssemblyDocument = TryCast(Globals.g_inventorApplication.ActiveDocument, AssemblyDocument)
-        If asm Is Nothing Then Return
+            Dim newFileName As String = If(filename.Text, "").Trim()
+            If String.IsNullOrWhiteSpace(newFileName) Then Return
 
-        Dim asmFolder As String = IO.Path.GetDirectoryName(asm.FullFileName)
+            Dim asm As AssemblyDocument = TryCast(Globals.g_inventorApplication.ActiveDocument, AssemblyDocument)
+            If asm Is Nothing Then Return
 
-        ' '.' 은 파일명에서 P로 치환해서 실제 저장명과 일치시킴
-        Dim expectedName As String = newFileName.Replace(".", "P") & ".ipt"
-        Dim dstPathExpected As String = IO.Path.Combine(asmFolder, expectedName)
+            ' ==============================
+            ' Support: [CHANGED] 미리보기는 항상 TMP만 사용 (final 재사용 금지)
+            '   - 옵션 변경/취소는 TMP만 건드림
+            '   - final 합류/재사용은 Apply/OK에서만 허용
+            ' ==============================
+            Dim prevPreviewPath As String = m_currentPreviewSupportAsmPath
 
-        ' ★ 이미 존재하면 재사용(덮어쓰기/경고창 방지)
-        Dim existedAlready As Boolean = IO.File.Exists(dstPathExpected)
+            ' 미리보기 TMP 생성(항상 유니크)
+            Dim previewPath As String = CreatePreviewTempSupport(m_resolvedSupportPath, newFileName)
+            If String.IsNullOrWhiteSpace(previewPath) Then Return
 
-        ' ★ 있으면 그걸 쓰고, 없으면 복사 생성
-        Dim copiedOrExistingPath As String = ResolveOrCopySupportToAsmFolder(m_resolvedSupportPath, newFileName)
-        If String.IsNullOrWhiteSpace(copiedOrExistingPath) Then Return
-
-        ' ★ "새로 생성된 경우"에만 임시 생성 파일 목록에 넣는다
-        If Not existedAlready Then
-            If Not m_tempCreatedFiles.Contains(copiedOrExistingPath) Then
-                m_tempCreatedFiles.Add(copiedOrExistingPath)
+            ' 이번 세션 임시 생성 목록에 등록(취소/X 시 삭제 대상)
+            If Not m_tempCreatedFiles.Contains(previewPath) Then
+                m_tempCreatedFiles.Add(previewPath)
             End If
-        End If
 
-        ' ★ 배치
-        If m_supportOcc Is Nothing Then
-            ' ★ 우선순위: 클릭 지점 → 없으면 centerPoint
-            Dim spawnPt As Inventor.Point = If(m_lastPickPoint, m_centerPoint)
-            m_supportOcc = PlaceSupportOccurrence(copiedOrExistingPath, spawnPt)
-            If m_supportOcc Is Nothing Then Return
-        Else
-            Try
-                ' Replace로 대치 (구속/위치 유지 기대)
-                m_supportOcc.Replace(copiedOrExistingPath, True)
-                Globals.g_inventorApplication.ActiveView.Update()
-            Catch
-                ' Replace 실패 시만 삭제 후 재배치로 폴백
-                Try : m_supportOcc.Delete() : Catch : End Try
-                Dim spawnPt As Inventor.Point = If(m_lastPickPoint, m_centerPoint)
-                m_supportOcc = PlaceSupportOccurrence(copiedOrExistingPath, spawnPt)
+            If m_supportOcc Is Nothing Then
+                Dim spawnPt As Inventor.Point = GetSpawnPointOnTargetAxis()
+                m_supportOcc = PlaceSupportOccurrence(previewPath, spawnPt)
                 If m_supportOcc Is Nothing Then Return
-            End Try
-        End If
-
-        ' =====================================================
-        ' 4) 파라미터 값 계산
-        '    - SD : size offset (기존처럼)
-        '    - SPL: ★ 모델링 파라미터는 length.Text(원본거리) 기준
-        ' =====================================================
-        Dim sdVal As Double = GetSizeOffset(stext.Text)
-
-        ' =====================================================
-        ' ★ SPL(모델링)은 "length.Text" (원본거리)에서만 가져온다
-        '    - filename은 splength.Text 기반(기존 유지)
-        ' =====================================================
-        Dim rawLenText As String = If(length.Text, "").Trim()
-        Dim splVal As Double = 0
-
-        ' 한국/영문 소수점 혼용 대비
-        If Not Double.TryParse(rawLenText,
-                       Globalization.NumberStyles.Any,
-                       Globalization.CultureInfo.InvariantCulture,
-                       splVal) Then
-            Double.TryParse(rawLenText, splVal)
-        End If
-
-        ' ★ SPL은 "length.Text" 기준이므로, 파일이 이미 있어도 항상 갱신해야 함
-        UpdateSupportParameters(m_supportOcc, sdVal, splVal)
-
-        ' 3-1) SAD 배치(STS + SAD 파일이 있을 때만)
-        '      - 핵심: "경로가 바뀔 때만" Replace/재배치
-        If mat = "STS" AndAlso Not String.IsNullOrWhiteSpace(m_resolvedSadPath) Then
-
-            Dim desiredSadPath As String = m_resolvedSadPath.Trim()
-
-            ' (1) 이미 SAD가 있고, 같은 파일이면: 아무 것도 하지 않는다(유지)
-            If m_sadOcc IsNot Nothing AndAlso
-       Not String.IsNullOrWhiteSpace(m_currentSadSourcePath) AndAlso
-       String.Equals(m_currentSadSourcePath, desiredSadPath, StringComparison.OrdinalIgnoreCase) Then
-                ' 그대로 유지
             Else
-                ' (2) SAD가 없거나, 경로가 바뀐 경우에만 업데이트
-                If m_sadOcc Is Nothing Then
-                    Dim spawnPtSad As Inventor.Point = If(m_lastPickPoint, m_centerPoint)
-                    m_sadOcc = PlaceSupportOccurrence(desiredSadPath, spawnPtSad)
-                    If m_sadOcc Is Nothing Then Return
+                Try
+                    m_supportOcc.Replace(previewPath, True)
+                    Globals.g_inventorApplication.ActiveView.Update()
+                Catch
+                    Try : m_supportOcc.Delete() : Catch : End Try
+                    Dim spawnPt As Inventor.Point = GetSpawnPointOnTargetAxis()
+                    m_supportOcc = PlaceSupportOccurrence(previewPath, spawnPt)
+                    If m_supportOcc Is Nothing Then Return
+                End Try
+            End If
+
+
+            ' 현재 미리보기 TMP 경로만 갱신
+            m_currentPreviewSupportAsmPath = previewPath
+
+            ' 이전 미리보기 TMP 정리(세션 임시 생성 파일만 삭제)
+            CleanupPrevPreviewTempFile(prevPreviewPath, m_currentPreviewSupportAsmPath)
+
+
+            ' 파라미터 갱신(항상 수행)
+            Dim sdVal As Double = GetSizeOffset(stext.Text)
+
+            Dim rawLenText As String = If(length.Text, "").Trim()
+            Dim splVal As Double = 0
+            If Not Double.TryParse(rawLenText,
+                               Globalization.NumberStyles.Any,
+                               Globalization.CultureInfo.InvariantCulture,
+                               splVal) Then
+                Double.TryParse(rawLenText, splVal)
+            End If
+
+            Dim matU As String = mat
+            Dim setSD As Boolean = (matU <> "PVC")   ' PVC는 SD 수정 안 함
+            UpdateSupportParameters(m_supportOcc, sdVal, splVal, setSD, True)
+
+
+            ' ==============================
+            ' SAD 배치(선택) - STS일 때만
+            ' ==============================
+            If mat = "STS" AndAlso Not String.IsNullOrWhiteSpace(m_resolvedSadPath) Then
+
+                Dim desiredSadPath As String = m_resolvedSadPath.Trim()
+
+                If m_sadOcc IsNot Nothing AndAlso
+               Not String.IsNullOrWhiteSpace(m_currentSadSourcePath) AndAlso
+               String.Equals(m_currentSadSourcePath, desiredSadPath, StringComparison.OrdinalIgnoreCase) Then
+                    ' 그대로 유지
                 Else
-                    ' 가능하면 Replace 우선(위치/구속 유지 기대)
-                    Try
-                        m_sadOcc.Replace(desiredSadPath, True)
-                        Globals.g_inventorApplication.ActiveView.Update()
-                    Catch
-                        ' Replace 실패 시만 삭제 후 재배치
-                        Try : m_sadOcc.Delete() : Catch : End Try
-                        Dim spawnPtSad As Inventor.Point = If(m_lastPickPoint, m_centerPoint)
+                    If m_sadOcc Is Nothing Then
+                        Dim spawnPtSad As Inventor.Point = GetSpawnPointOnTargetAxis()
                         m_sadOcc = PlaceSupportOccurrence(desiredSadPath, spawnPtSad)
                         If m_sadOcc Is Nothing Then Return
-                    End Try
+                    Else
+                        Try
+                            m_sadOcc.Replace(desiredSadPath, True)
+                            Globals.g_inventorApplication.ActiveView.Update()
+                        Catch
+                            Try : m_sadOcc.Delete() : Catch : End Try
+                            Dim spawnPtSad As Inventor.Point = GetSpawnPointOnTargetAxis()
+                            m_sadOcc = PlaceSupportOccurrence(desiredSadPath, spawnPtSad)
+                            If m_sadOcc Is Nothing Then Return
+                        End Try
+                    End If
+
+                    m_currentSadSourcePath = desiredSadPath
                 End If
-
-                ' 현재 적용된 SAD 경로 갱신
-                m_currentSadSourcePath = desiredSadPath
             End If
 
-        Else
-            ' STS가 아니거나 SAD 경로를 못 찾았으면: SAD 유지/삭제 정책은 선택
-            ' 지금 요구사항(옵션 바꿀 때 불필요한 갱신 금지) 기준으로는 "그냥 둠"이 안전함.
-            ' 필요하면 여기서 삭제하도록 바꿀 수 있음.
-        End If
+            ' ==============================
+            ' 축대축 임시구속
+            ' ==============================
+            If m_selectedComponent Is Nothing Then Return
 
-        ' 6) 축대축(또는 중심축) 임시구속 적용
-        If m_selectedComponent Is Nothing Then
-            ' 튜브가 선택되지 않았다면 배치만 하고 종료
-            Return
-        End If
+            ' matU는 위에서 이미 선언돼 있으니 재선언하지 말고 그대로 사용
+            Dim preferZ As Boolean = (matU = "PVC")
 
-        ' 6-1) 기존 Support 축 구속
-        If Not ApplyTempAxisToAxisPreview(m_supportOcc, m_selectedComponent, m_tempAxisConstraint_Support, False) Then
-            ' 실패 메시지는 내부에서 처리
-        Else
-            Globals.g_inventorApplication.StatusBarText = "Support(기본) 미리보기 배치 완료"
-        End If
+            Dim spawnPtForLock As Inventor.Point = GetSpawnPointOnTargetAxis()
 
-        ' 6-2) SAD 축 구속 (Axis_Z 이름 우선)
-        If mat = "STS" AndAlso m_sadOcc IsNot Nothing Then
-            If Not ApplyTempAxisToAxisPreview(m_sadOcc, m_selectedComponent, m_tempAxisConstraint_SAD, True) Then
-                ' 실패 메시지는 내부에서 처리
-            Else
-                Globals.g_inventorApplication.StatusBarText = "Support(기본) + SAD 미리보기 배치 완료"
+            If ApplyTempAxisToAxisPreview(m_supportOcc, m_selectedComponent, m_tempAxisConstraint_Support, preferZ, spawnPtForLock) Then
+                Globals.g_inventorApplication.StatusBarText = "Support(기본) 미리보기 배치 완료"
             End If
-        End If
 
+            If mat = "STS" AndAlso m_sadOcc IsNot Nothing Then
+                If ApplyTempAxisToAxisPreview(m_sadOcc, m_selectedComponent, m_tempAxisConstraint_SAD, True, spawnPtForLock) Then
+                    Globals.g_inventorApplication.StatusBarText = "Support(기본) + SAD 미리보기 배치 완료"
+                End If
+            End If
+
+        Catch ex As Exception
+            MessageBox.Show(ex.Message, "RunPreviewPlacement 오류")
+        End Try
     End Sub
 
     ' =========================
-    ' [NEW] 같은 파일명 있으면 재사용, 없으면 새로 복사
+    ' [NEW] 미리보기 전용: 무조건 TMP 복사본 생성
     ' =========================
-    Private Function ResolveOrCopySupportToAsmFolder(srcLibPath As String, newFileName As String) As String
+    Private Function CreatePreviewTempSupport(srcLibPath As String, finalFileName As String) As String
         Dim asm As AssemblyDocument = TryCast(Globals.g_inventorApplication.ActiveDocument, AssemblyDocument)
         If asm Is Nothing Then Return ""
         If String.IsNullOrWhiteSpace(srcLibPath) OrElse Not IO.File.Exists(srcLibPath) Then Return ""
-        If String.IsNullOrWhiteSpace(newFileName) Then Return ""
+        If String.IsNullOrWhiteSpace(finalFileName) Then Return ""
 
-        newFileName = newFileName.Replace(".", "P")
+        finalFileName = finalFileName.Replace(".", "P")
 
         Dim asmFolder As String = IO.Path.GetDirectoryName(asm.FullFileName)
-        Dim dstPath As String = IO.Path.Combine(asmFolder, newFileName & ".ipt")
 
-        ' ★ 이미 있으면: 덮어쓰기 금지(경고창 원인 제거) → 그대로 재사용
-        If IO.File.Exists(dstPath) Then
-            Return dstPath
-        End If
+        ' ★ TMP는 항상 유니크
+        Dim tmpName As String = finalFileName & "__TMP_" & DateTime.Now.ToString("yyyyMMdd_HHmmss_fff") & "_" & Guid.NewGuid().ToString("N").Substring(0, 6)
+        Dim tmpPath As String = IO.Path.Combine(asmFolder, tmpName & ".ipt")
 
-        ' 없으면: 기존 로직대로 복사(생성)
         Try
-            IO.File.Copy(srcLibPath, dstPath, False)
-            Try : IO.File.SetAttributes(dstPath, IO.FileAttributes.Normal) : Catch : End Try
-            Return dstPath
-        Catch ex As Exception
-            MessageBox.Show("파일 복사 실패: " & ex.Message)
+            IO.File.Copy(srcLibPath, tmpPath, False)
+            Try : IO.File.SetAttributes(tmpPath, IO.FileAttributes.Normal) : Catch : End Try
+            Return tmpPath
+        Catch
             Return ""
         End Try
     End Function
+
+
+    ' =========================
+    ' [CHANGED] 확정(Apply/OK):
+    '   - final이 이미 있으면 TMP 내용을 final에 "덮어쓰기(merge)" 후 TMP 삭제
+    '   - final이 없으면 TMP를 final로 Move(승격)
+    ' =========================
+    Private Function CommitPreviewToFinal(tmpPath As String, finalFileName As String) As String
+        Dim asm As AssemblyDocument = TryCast(Globals.g_inventorApplication.ActiveDocument, AssemblyDocument)
+        If asm Is Nothing Then Return ""
+        If String.IsNullOrWhiteSpace(finalFileName) Then Return ""
+
+        finalFileName = finalFileName.Replace(".", "P")
+
+        Dim asmFolder As String = IO.Path.GetDirectoryName(asm.FullFileName)
+        Dim finalPath As String = IO.Path.Combine(asmFolder, finalFileName & ".ipt")
+
+        If String.IsNullOrWhiteSpace(tmpPath) Then Return ""
+        If Not IO.File.Exists(tmpPath) Then Return ""
+
+        ' 1) final이 이미 있으면: TMP -> final 덮어쓰기(파라미터 포함) + TMP 삭제
+        If IO.File.Exists(finalPath) Then
+            Try
+                TryCloseDocumentIfOpen(finalPath)
+                TryCloseDocumentIfOpen(tmpPath)
+
+                Try : IO.File.SetAttributes(finalPath, IO.FileAttributes.Normal) : Catch : End Try
+                Try : IO.File.SetAttributes(tmpPath, IO.FileAttributes.Normal) : Catch : End Try
+
+                IO.File.Copy(tmpPath, finalPath, True)
+
+                For i As Integer = 1 To 5
+                    Try
+                        IO.File.Delete(tmpPath)
+                        Exit For
+                    Catch
+                        Try : System.Threading.Thread.Sleep(150) : Catch : End Try
+                    End Try
+                Next
+
+                Return finalPath
+            Catch
+                Return finalPath
+            End Try
+        End If
+
+        ' 2) final이 없으면: TMP를 final로 승격
+        Try
+            TryCloseDocumentIfOpen(tmpPath)
+            IO.File.Move(tmpPath, finalPath)
+            Try : IO.File.SetAttributes(finalPath, IO.FileAttributes.Normal) : Catch : End Try
+            Return finalPath
+        Catch
+        End Try
+
+        Return ""
+    End Function
+
+
+
 
     ' [NEW] et1=Mate / et2=Flush
     Private Sub et1_CheckedChanged(sender As Object, e As EventArgs) Handles et1.CheckedChanged
         If et1 Is Nothing Then Return
         If Not et1.Checked Then Return
 
-        ' Mate 모드
         m_isFlushMode = False
         If et2 IsNot Nothing Then et2.Checked = False
 
-        ' [CHANGED] 이미 면 2개가 있으면 재선택 없이 바로 전환
         If m_baseFace IsNot Nothing AndAlso m_targetFace IsNot Nothing Then
             RebuildTempMateFlushConstraint()
         Else
             Me.BeginInvoke(New Action(AddressOf StartMateFlushPickSequence))
         End If
-
     End Sub
 
     Private Sub et2_CheckedChanged(sender As Object, e As EventArgs) Handles et2.CheckedChanged
         If et2 Is Nothing Then Return
         If Not et2.Checked Then Return
 
-        ' Flush 모드
         m_isFlushMode = True
         If et1 IsNot Nothing Then et1.Checked = False
 
-        ' 면 2개 다시 선택해서 미리보기 구속 생성
-        ' [CHANGED] 이미 면 2개가 있으면 재선택 없이 바로 전환
         If m_baseFace IsNot Nothing AndAlso m_targetFace IsNot Nothing Then
             RebuildTempMateFlushConstraint()
         Else
             Me.BeginInvoke(New Action(AddressOf StartMateFlushPickSequence))
         End If
-
     End Sub
+
     ' [NEW] Mate/Flush 면선택 → 임시 구속 생성
     Private Sub StartMateFlushPickSequence()
         If Globals.g_inventorApplication Is Nothing Then Return
 
-        ' Mate/Flush 임시구속만 제거 (중심축 구속은 유지!)
         Try
             If m_tempMateFlushConstraint IsNot Nothing Then m_tempMateFlushConstraint.Delete()
         Catch
         End Try
         m_tempMateFlushConstraint = Nothing
 
-        ' [CHANGED] "새로 선택할 때만" 초기화해야 함
-        ' 기존 면이 이미 잡혀있으면 유지하고, StartMateFlushPickSequence가 호출된 경우는
-        ' (즉, 면이 없어서) 새로 뽑는 상황이므로 여기서 초기화해도 OK
-
         m_baseFace = Nothing
         m_targetFace = Nothing
 
-        ' Inventor로 포커스 + ESC로 Pick 초기화
         Try
             SetForegroundWindow(New IntPtr(Globals.g_inventorApplication.MainFrameHWND))
             SendKeys.SendWait("{ESC}")
@@ -1043,25 +1177,22 @@ Public Class CreateSupportForm
         End Try
 
         Try
-            ' 1) Base Face
             Dim f1 = Globals.g_inventorApplication.CommandManager.Pick(
-            SelectionFilterEnum.kPartFaceFilter,
-            "기준 면(Base Face)을 선택하세요")
+                SelectionFilterEnum.kPartFaceFilter,
+                "기준 면(Base Face)을 선택하세요")
 
             If f1 Is Nothing OrElse Not TypeOf f1 Is Face Then Return
             m_baseFace = CType(f1, Face)
             HighlightMateFlushFace(m_baseFace, True)
 
-            ' 2) Target Face
             Dim f2 = Globals.g_inventorApplication.CommandManager.Pick(
-            SelectionFilterEnum.kPartFaceFilter,
-            "맞출 면(Target Face)을 선택하세요")
+                SelectionFilterEnum.kPartFaceFilter,
+                "맞출 면(Target Face)을 선택하세요")
 
             If f2 Is Nothing OrElse Not TypeOf f2 Is Face Then Return
             m_targetFace = CType(f2, Face)
             HighlightMateFlushFace(m_targetFace, False)
 
-            ' 3) 구속 생성 + 현재 Distance 값 반영
             RebuildTempMateFlushConstraint()
 
         Catch ex As Exception
@@ -1081,14 +1212,12 @@ Public Class CreateSupportForm
         Dim asmDef As AssemblyComponentDefinition = asm.ComponentDefinition
         Dim uom As UnitsOfMeasure = asm.UnitsOfMeasure
 
-        ' Mate/Flush 임시구속만 제거
         Try
             If m_tempMateFlushConstraint IsNot Nothing Then m_tempMateFlushConstraint.Delete()
         Catch
         End Try
         m_tempMateFlushConstraint = Nothing
 
-        ' Distance(mm) → Inventor DB length로 변환해서 offset에 사용
         Dim offsetDb As Double = GetOffsetDbFromDistanceText(uom)
 
         Try
@@ -1099,7 +1228,6 @@ Public Class CreateSupportForm
             End If
 
             Globals.g_inventorApplication.ActiveView.Update()
-
         Catch ex As Exception
             MessageBox.Show("임시 구속 생성 실패: " & ex.Message, "구속 오류")
         End Try
@@ -1118,7 +1246,6 @@ Public Class CreateSupportForm
             Dim uom As UnitsOfMeasure = asm.UnitsOfMeasure
             Dim offsetDb As Double = GetOffsetDbFromDistanceText(uom)
 
-            ' MateConstraint/FlushConstraint 둘 다 Offset을 가짐
             Dim mc As MateConstraint = TryCast(m_tempMateFlushConstraint, MateConstraint)
             If mc IsNot Nothing Then
                 mc.Offset.Value = offsetDb
@@ -1129,9 +1256,7 @@ Public Class CreateSupportForm
 
             asm.Update2(True)
             Globals.g_inventorApplication.ActiveView.Update()
-
         Catch
-            ' 숫자 입력 중(예: "-" / "." / 빈칸)엔 조용히 무시
         End Try
     End Sub
 
@@ -1142,15 +1267,16 @@ Public Class CreateSupportForm
 
         Dim v As Double = 0
         If Not Double.TryParse(s, Globalization.NumberStyles.Any,
-                           Globalization.CultureInfo.InvariantCulture, v) Then
-            ' 한국식 입력 대비(콤마/소수)
+                               Globalization.CultureInfo.InvariantCulture, v) Then
             Double.TryParse(s, v)
         End If
 
-        ' mm 입력값을 "mm"로 파싱 → DB length 반환
-        Return uom.GetValueFromExpression(v.ToString("0.###", Globalization.CultureInfo.InvariantCulture) & " mm",
-                                     UnitsTypeEnum.kMillimeterLengthUnits)
+        Return uom.GetValueFromExpression(
+            v.ToString("0.###", Globalization.CultureInfo.InvariantCulture) & " mm",
+            UnitsTypeEnum.kMillimeterLengthUnits
+        )
     End Function
+
     Private Sub ClearMateFlushFaceHighlights()
         Try
             If m_hlBaseFace IsNot Nothing Then m_hlBaseFace.Delete()
@@ -1185,31 +1311,30 @@ Public Class CreateSupportForm
             If isBase Then
                 If m_hlBaseFace Is Nothing Then
                     m_hlBaseFace = doc.CreateHighlightSet()
-                    m_hlBaseFace.Color = app.TransientObjects.CreateColor(0, 191, 255) ' 파랑
+                    m_hlBaseFace.Color = app.TransientObjects.CreateColor(0, 191, 255)
                 End If
                 hs = m_hlBaseFace
             Else
                 If m_hlTargetFace Is Nothing Then
                     m_hlTargetFace = doc.CreateHighlightSet()
-                    m_hlTargetFace.Color = app.TransientObjects.CreateColor(120, 255, 120) ' 초록
+                    m_hlTargetFace.Color = app.TransientObjects.CreateColor(120, 255, 120)
                 End If
                 hs = m_hlTargetFace
             End If
 
             hs.Clear()
             hs.AddItem(faceObj)
-
             app.ActiveView.Update()
         Catch
         End Try
     End Sub
-    ' [NEW] X 클릭 = 취소와 동일 (임시 배치/구속/축/하이라이트 정리 후 닫기)
+
+    ' [NEW] X 클릭 = 취소와 동일
     Private Sub lblClose_Click(sender As Object, e As EventArgs)
         ClearAll_OnClose()
         Me.Close()
     End Sub
 
-    ' [NEW] X 호버 색상
     Private Sub lblClose_MouseEnter(sender As Object, e As EventArgs)
         If lblClose Is Nothing Then Return
         lblClose.ForeColor = cCloseHover
@@ -1220,15 +1345,12 @@ Public Class CreateSupportForm
         lblClose.ForeColor = cGlyph
     End Sub
 
-
-
 #End Region
 
 #Region "H. 면선택(fselect) 버튼 이벤트(Click/Hover)"
 
-
     Private Sub fselect_Click(sender As Object, e As EventArgs) _
-    Handles fselect.Click, Label1.Click, PictureBox1.Click
+        Handles fselect.Click, Label1.Click, PictureBox1.Click
 
         isObjectSelectionActive = False
 
@@ -1271,12 +1393,11 @@ Public Class CreateSupportForm
         fselect.BackColor = cBtnHover
     End Sub
 
-
-
 #End Region
-    ' ========================= Part 2/2 =========================
-#Region "I. Inventor 선택 루프 + 바닥면 선택/거리"
 
+    ' ========================= Part 2/2 =========================
+
+#Region "I. Inventor 선택 루프 + 바닥면 선택/거리"
 
     Private Sub RunAnalysisSequence()
         If Globals.g_inventorApplication Is Nothing Then Return
@@ -1294,15 +1415,14 @@ Public Class CreateSupportForm
             Dim oSelect As Object = Nothing
             Try
                 SetForegroundWindow(New IntPtr(Globals.g_inventorApplication.MainFrameHWND))
+
                 Dim pPick As Inventor.Point = Nothing
                 Dim occPicked As ComponentOccurrence =
-                    PickOccurrenceWithPoint("SUPPORT 생성할 대상을 선택하세요 (ESC 종료)", pPick)
+    PickOccurrenceWithPoint("Support 생성할 객체를 선택하세요", pPick)
+
 
                 oSelect = occPicked
-
-                ' [NEW] 클릭 지점 저장(없으면 Nothing)
                 m_lastPickPoint = pPick
-
             Catch
                 Exit While
             End Try
@@ -1312,8 +1432,11 @@ Public Class CreateSupportForm
             Dim comp As ComponentOccurrence = CType(oSelect, ComponentOccurrence)
             Dim fileName As String = comp.Definition.Document.DisplayName.ToUpper()
 
-            selHL?.Clear()
-            selHL?.AddItem(comp)
+            Try
+                selHL?.Clear()
+                selHL?.AddItem(comp)
+            Catch
+            End Try
 
             If fileName.Contains("TUBE") Then
                 ttext.Text = "TUBE"
@@ -1335,10 +1458,12 @@ Public Class CreateSupportForm
             UpdateFilename()
         End While
 
-        selHL?.Delete()
+        Try
+            selHL?.Delete()
+        Catch
+        End Try
     End Sub
 
-    ' [REPLACE] 면 선택 후 자동으로 길이 계산 및 "미리보기 배치" 실행
     Private Sub RunSupportFaceSelection()
         If m_centerPoint Is Nothing Then Return
 
@@ -1350,36 +1475,55 @@ Public Class CreateSupportForm
 
             If face Is Nothing Then Return
 
-            ' Assembly에서 Pick하면 FaceProxy일 수 있어서 Object로 처리 후 Face로 캐스팅 시도
             Dim pickedObj As Object = face
 
-            Dim realFace As Face = TryCast(pickedObj, Face)
-            If realFace Is Nothing Then
-                ' FaceProxy도 Face처럼 취급되지만, 안전하게 TryCast 한번 더
-                realFace = TryCast(pickedObj, Face)
+            ' Face / FaceProxy 둘 다 허용
+            Dim faceAsFace As Face = TryCast(pickedObj, Face)
+            Dim faceAsProxy As FaceProxy = TryCast(pickedObj, FaceProxy)
+
+            If faceAsFace Is Nothing AndAlso faceAsProxy Is Nothing Then Return
+
+            ' m_supportFace는 Face 타입이라 Proxy면 GeometryProxy로 저장(후속 최소거리 계산용)
+            If faceAsFace IsNot Nothing Then
+                m_supportFace = faceAsFace
+            Else
+                m_supportFace = faceAsProxy   ' ★ FaceProxy도 Face처럼 취급 가능(변수 타입이 Face면 컴파일 에러 나면 아래 2)로 변경)
             End If
-            If realFace Is Nothing Then Return
 
-            m_supportFace = realFace
+            ' [NEW] 바닥면 경사각(도) 계산 → af 텍스트박스 출력(소수점 둘째자리)
+            Try
+                If af IsNot Nothing Then
+                    Dim slopeDeg As Double = GetFloorSlopeDeg(pickedObj)
+                    af.Text = slopeDeg.ToString("0.00", Globalization.CultureInfo.InvariantCulture)
 
-            ' [NEW] 지지면이 속한 파트의 Inventor "재질(Material)"을 읽어서 mtext에 넣는다
+                    Try
+                        Dim fp As FaceProxy = TryCast(pickedObj, FaceProxy)
+                        Globals.g_inventorApplication.StatusBarText =
+                            $"[SlopeDebug] isProxy={(fp IsNot Nothing)}  slope={af.Text}"
+                    Catch
+                    End Try
+                End If
+            Catch
+            End Try
+
+            ' 재질 읽기
             Dim matCode As String = GetMaterialFromPickedFace(pickedObj)
             If Not String.IsNullOrWhiteSpace(matCode) Then
-                mtext.Text = matCode   ' 예: "PVC", "STS"
+                mtext.Text = matCode
             End If
 
-            ' 재질이 바뀌면 파일명/검색키도 달라지니까 즉시 갱신
+            ApplyMaterialRules()   ' ★ 추가
             UpdateOptionButtons()
             UpdateFilename()
 
             Dim distCm =
-    Globals.g_inventorApplication.MeasureTools.GetMinimumDistance(m_centerPoint, m_supportFace)
+    Globals.g_inventorApplication.MeasureTools.GetMinimumDistance(m_centerPoint, pickedObj)
+
 
             length.Text = (distCm * 10).ToString("0.00")
             UpdateSupportLength()
             UpdateFilename()
 
-            ' [핵심 추가] 면 선택이 끝나면 즉시 Support를 불러와 임시 배치(Preview)
             Me.BeginInvoke(New Action(AddressOf RunPreviewPlacement))
 
         Catch ex As Exception
@@ -1387,40 +1531,31 @@ Public Class CreateSupportForm
         End Try
     End Sub
 
-
-
 #End Region
 
-#Region "J. SUPPORT 파일 탐색 규칙(기존 FindSupportFile)"
-    ' [CHANGED] 재질명에서 괄호 제거 후,
-    ' 포함 여부로 STS/PVC를 뽑아낸다 (STS316, STS304-HL, PVC-WHITE 등 대응)
+#Region "J. SUPPORT 파일 탐색 규칙"
+
     Private Function NormalizeMaterialName(rawName As String) As String
         Dim s As String = If(rawName, "").Trim()
         If s = "" Then Return ""
 
-
-        ' 괄호(옵션명) 제거: "PVC(WHITE)" -> "PVC"
         Dim idx As Integer = s.IndexOf("("c)
         If idx >= 0 Then s = s.Substring(0, idx)
 
         s = s.Trim().ToUpper()
 
-        ' 핵심: "포함" 기준으로 코드화
         If s.Contains("STS") OrElse s.Contains("SUS") OrElse s.Contains("STAINLESS") Then Return "STS"
         If s.Contains("PVC") Then Return "PVC"
 
-        ' 둘 다 아니면: 일단 원문(괄호 제거된 재질명) 반환
         Return s
     End Function
 
-    ' [NEW] 어셈블리에서 선택한 Face(대부분 FaceProxy)로부터 "해당 파트의 Material" 이름 가져오기
     Private Function GetMaterialFromPickedFace(faceObj As Object) As String
         Try
             If faceObj Is Nothing Then Return ""
 
             Dim matName As String = ""
 
-            ' Assembly에서 Pick한 Face는 보통 FaceProxy로 들어옴
             Dim fp As FaceProxy = TryCast(faceObj, FaceProxy)
             If fp IsNot Nothing Then
                 Dim occ As ComponentOccurrence = fp.ContainingOccurrence
@@ -1431,10 +1566,10 @@ Public Class CreateSupportForm
                     End If
                 End If
             Else
-                ' Part 문서에서 직접 Face를 잡는 경우 대비
                 Dim f As Face = TryCast(faceObj, Face)
                 If f IsNot Nothing Then
-                    Dim doc As Document = TryCast(f.Parent.Parent.Parent, Document) ' 안전하지 않을 수 있어 Try로 감쌈
+                    ' 이 루트는 불안정하니 Try 내에서만
+                    Dim doc As Document = TryCast(f.Parent.Parent.Parent, Document)
                     Dim pdoc As PartDocument = TryCast(doc, PartDocument)
                     If pdoc IsNot Nothing Then
                         matName = pdoc.ComponentDefinition.Material.Name
@@ -1449,16 +1584,24 @@ Public Class CreateSupportForm
     End Function
 
     Private Const SUPPORT_BASE_PATH As String =
-        "O:\\System_BU_Vault\\00. 구매품 Library\\support\\"
+        "O:\System_BU_Vault\00. 구매품 Library\support\"
 
     Private Function GetSupportFolderPath() As String
-        Dim style =
-            If(saddle.Checked, "Saddle",
-               If(grip.Checked, "Grip", "Basic"))
+        Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
 
-        Select Case mtext.Text
-            Case "PVC" : Return IO.Path.Combine(SUPPORT_BASE_PATH, "PVC_SUPPORT", style)
-            Case "STS" : Return IO.Path.Combine(SUPPORT_BASE_PATH, "STS_SUPPORT")
+        Select Case mat
+            Case "PVC"
+                ' PVC: FootType에 따라 폴더 선택 (CF=Basic, GF=Grip)
+                Dim ft As String = GetLegCode() ' CF / GF
+                If ft = "GF" Then
+                    Return IO.Path.Combine(SUPPORT_BASE_PATH, "PVC_SUPPORT", "Grip")
+                Else
+                    Return IO.Path.Combine(SUPPORT_BASE_PATH, "PVC_SUPPORT", "Basic")
+                End If
+
+            Case "STS"
+                ' STS: 기존 유지(최상위 폴더)
+                Return IO.Path.Combine(SUPPORT_BASE_PATH, "STS_SUPPORT")
         End Select
         Return ""
     End Function
@@ -1469,16 +1612,65 @@ Public Class CreateSupportForm
         If Not IO.Directory.Exists(folder) Then Return ""
 
         Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
+
         If mat = "STS" Then
             Return FindStsFileByCoreKeys_IgnoreSizeLength(folder)
         End If
 
-        ' PVC는 나중에
+        If mat = "PVC" Then
+            Return FindPvcFileByCoreKeys_SizeRequired_IgnoreLength(folder)
+        End If
+        Return ""
+
+    End Function
+    ' [NEW] PVC: Size/Length 무시, 폴더는 이미 Basic/Grip로 좁혀져 있음
+    Private Function FindPvcFileByCoreKeys_SizeRequired_IgnoreLength(pvcFolder As String) As String
+        If Not IO.Directory.Exists(pvcFolder) Then Return ""
+
+        Dim sm As String = ConvertSingleMultiToCode()      ' S/M
+        Dim typ As String = GetSadTypeCode() ' TU/PI
+        Dim sizeCode As String = ConvertSizeToCode(stext.Text) ' ★ PVC는 사이즈 필수
+        Dim leg As String = GetLegCode()                   ' CF/GF
+        Dim bolt As String = "N"                           ' PVC 고정
+
+        Dim files = IO.Directory.GetFiles(pvcFolder, "*.ipt", IO.SearchOption.TopDirectoryOnly)
+
+        ' 1) PVC + S/M + TU/PI + SIZE + CF/GF + N
+        For Each f In files
+            Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
+            If Not HasToken(n, "PVC") Then Continue For
+            If Not HasToken(n, sm) Then Continue For
+            If Not HasToken(n, typ) Then Continue For
+            If Not HasToken(n, sizeCode) Then Continue For   ' ★ 추가
+            If Not HasToken(n, leg) Then Continue For
+            If Not HasToken(n, bolt) Then Continue For
+            Return f
+        Next
+
+        ' 2) PVC + TU/PI + SIZE + CF/GF
+        For Each f In files
+            Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
+            If Not HasToken(n, "PVC") Then Continue For
+            If Not HasToken(n, typ) Then Continue For
+            If Not HasToken(n, sizeCode) Then Continue For   ' ★ 추가
+            If Not HasToken(n, leg) Then Continue For
+            Return f
+        Next
+
+        ' 3) PVC + SIZE + CF/GF
+        For Each f In files
+            Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
+            If Not HasToken(n, "PVC") Then Continue For
+            If Not HasToken(n, sizeCode) Then Continue For   ' ★ 추가
+            If Not HasToken(n, leg) Then Continue For
+            Return f
+        Next
+
         Return ""
     End Function
 
     Private Function PlaceSupportOccurrence(supportPath As String,
-                                       Optional spawnPoint As Inventor.Point = Nothing) As ComponentOccurrence
+                                           Optional spawnPoint As Inventor.Point = Nothing) As ComponentOccurrence
         If Globals.g_inventorApplication Is Nothing Then Return Nothing
 
         Dim doc As Document = Globals.g_inventorApplication.ActiveDocument
@@ -1499,7 +1691,6 @@ Public Class CreateSupportForm
             Dim m As Matrix = Globals.g_inventorApplication.TransientGeometry.CreateMatrix()
             m.SetToIdentity()
 
-            ' ★ spawnPoint가 있으면 그 위치에서 스폰
             If spawnPoint IsNot Nothing Then
                 m.Cell(1, 4) = spawnPoint.X
                 m.Cell(2, 4) = spawnPoint.Y
@@ -1515,15 +1706,8 @@ Public Class CreateSupportForm
         End Try
     End Function
 
-    ' [NEW] Support/SAD 파일의 사용자 매개변수 수정
-    ' SD  : 사이즈 보정값(mm)
-    ' SPL : 길이(mm)
-    ' [CHANGED] Support/SAD 파일의 사용자 매개변수 수정
-    ' - UserParameters에는 NameIsUsed가 없음 → Item("SD") 접근을 Try로 처리
-    ' - 단위 꼬임 방지: Value(cm) 대신 Expression("mm")로 세팅
-    ' ===================== existing(UpdateSupportParameters) → changed(전체 교체) =====================
-    ' ===================== UpdateSupportParameters : 전체 교체 =====================
-    Private Sub UpdateSupportParameters(occ As ComponentOccurrence, sdMm As Double, splMm As Double, Optional doSave As Boolean = False)
+    Private Sub UpdateSupportParameters(occ As ComponentOccurrence, sdMm As Double, splMm As Double, Optional setSD As Boolean = True, Optional doSave As Boolean = False)
+
         If occ Is Nothing Then Return
 
         Dim partDef As PartComponentDefinition = TryCast(occ.Definition, PartComponentDefinition)
@@ -1538,15 +1722,27 @@ Public Class CreateSupportForm
         Dim okSD As Boolean = False
         Dim okSPL As Boolean = False
 
-        ' 1) UserParameters 먼저
         Try
             Dim ups As UserParameters = partDef.Parameters.UserParameters
-            Try : ups.Item("SD").Expression = sdExpr : okSD = True : Catch : End Try
-            Try : ups.Item("SPL").Expression = splExpr : okSPL = True : Catch : End Try
+            If setSD Then
+                Try
+                    ups.Item("SD").Expression = sdExpr
+                    okSD = True
+                Catch
+                End Try
+            Else
+                okSD = True ' PVC는 SD를 안 만지는 것이 정상 → OK 취급
+            End If
+
+            Try
+                ups.Item("SPL").Expression = splExpr
+                okSPL = True
+            Catch
+            End Try
+
         Catch
         End Try
 
-        ' 2) 안 잡히면 ModelParameters에서 찾기
         If (Not okSD) OrElse (Not okSPL) Then
             Try
                 Dim mps As ModelParameters = partDef.Parameters.ModelParameters
@@ -1554,7 +1750,7 @@ Public Class CreateSupportForm
                     If p Is Nothing OrElse p.Name Is Nothing Then Continue For
                     Dim nm As String = p.Name.Trim().ToUpper()
 
-                    If (Not okSD) AndAlso nm = "SD" Then
+                    If setSD AndAlso (Not okSD) AndAlso nm = "SD" Then
                         Try : p.Expression = sdExpr : okSD = True : Catch : End Try
                     End If
 
@@ -1568,179 +1764,92 @@ Public Class CreateSupportForm
             End Try
         End If
 
-        ' 3) 실제로 들어간 Expression을 다시 읽어서 상태바에 출력
         Try
             Dim readSD As String = ""
             Dim readSPL As String = ""
-
-            Try : readSD = partDef.Parameters.Item("SD").Expression : Catch : End Try
-            Try : readSPL = partDef.Parameters.Item("SPL").Expression : Catch : End Try
+            Try
+                readSD = partDef.Parameters.Item("SD").Expression
+            Catch
+            End Try
+            Try
+                readSPL = partDef.Parameters.Item("SPL").Expression
+            Catch
+            End Try
 
             Globals.g_inventorApplication.StatusBarText =
-            $"[SupportParam] SD={(If(okSD, "OK", "NG"))}({readSD})  SPL={(If(okSPL, "OK", "NG"))}({readSPL})  file={IO.Path.GetFileName(pdoc.FullFileName)}"
+                $"[SupportParam] SD={(If(okSD, "OK", "NG"))}({readSD})  SPL={(If(okSPL, "OK", "NG"))}({readSPL})  file={IO.Path.GetFileName(pdoc.FullFileName)}"
         Catch
         End Try
 
-        ' 4) 업데이트만 (Preview에서는 저장 금지)
         Try : pdoc.Update2(True) : Catch : End Try
 
-        ' 저장은 외부(Apply/OK)에서만 한다
-
+        If doSave Then
+            Try : pdoc.Save2(True) : Catch : End Try
+        End If
     End Sub
 
-    ' [NEW] 토큰이 "구분자(_ 또는 -)로 둘러싸인 상태"로 들어있는지 검사
+
     Private Function HasToken(nameUpper As String, tokenUpper As String) As Boolean
         nameUpper = If(nameUpper, "").Trim().ToUpper()
         tokenUpper = If(tokenUpper, "").Trim().ToUpper()
         If nameUpper = "" OrElse tokenUpper = "" Then Return False
 
-        ' 구분자 = 알파/숫자가 아닌 모든 문자 (_,-,공백 등)
         Dim pattern As String =
-        "(^|[^A-Z0-9])" &
-        System.Text.RegularExpressions.Regex.Escape(tokenUpper) &
-        "([^A-Z0-9]|$)"
+            "(^|[^A-Z0-9])" &
+            System.Text.RegularExpressions.Regex.Escape(tokenUpper) &
+            "([^A-Z0-9]|$)"
 
         Return System.Text.RegularExpressions.Regex.IsMatch(nameUpper, pattern)
     End Function
 
-    ' [NEW] STS: "STS / S|M / SF~SL / Y|N" 만으로 파일 찾기 (사이즈/길이/TU/PI/LSP 전부 무시)
     Private Function FindStsFileByCoreKeys_IgnoreSizeLength(stsFolder As String) As String
         If Not IO.Directory.Exists(stsFolder) Then Return ""
 
-        Dim sm As String = ConvertSingleMultiToCode()   ' S/M
-        Dim leg As String = GetLegCode()                ' SF/SS/SR/SL
-        Dim bolt As String = ConvertBoltToCode()        ' Y/N
-
-        Dim files = IO.Directory.GetFiles(stsFolder, "*.ipt", IO.SearchOption.TopDirectoryOnly)
-        If leg <> "SF" AndAlso leg <> "SS" AndAlso leg <> "SR" AndAlso leg <> "SL" Then
-            Return ""
-        End If
-        ' 1순위: STS + S/M + LEG + BOLT (토큰 매칭)
-        For Each f In files
-            Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
-
-            If Not HasToken(n, "STS") Then Continue For
-            If Not HasToken(n, sm) Then Continue For
-            If Not HasToken(n, leg) Then Continue For
-            If Not HasToken(n, bolt) Then Continue For
-
-            Return f
-        Next
-
-        ' 2순위: STS + LEG + BOLT (S/M 없는 파일 대비)
-        For Each f In files
-            Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
-
-            If Not HasToken(n, "STS") Then Continue For
-            If Not HasToken(n, leg) Then Continue For
-            If Not HasToken(n, bolt) Then Continue For
-
-            Return f
-        Next
-
-        ' 3순위: STS + LEG (최후)
-        For Each f In files
-            Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
-
-            If Not HasToken(n, "STS") Then Continue For
-            If Not HasToken(n, leg) Then Continue For
-
-            Return f
-        Next
-
-        Return ""
-    End Function
-
-    ' [NEW] STS: 길이(Lxx) 무시하고 토큰으로 파일 찾기
-    Private Function FindStsFileByTokensIgnoreLength(stsFolder As String) As String
-        Dim sm As String = ConvertSingleMultiToCode()            ' S/M
-        Dim typ As String = ConvertTypeToCode(ttext.Text)        ' TU/PI
-        Dim mdl As String = ConvertModelToCode(Model.Text)       ' LSP
-        Dim sizeCode As String = ConvertSizeToCode(stext.Text)   ' 06B 등
-        Dim leg As String = GetLegCode()                         ' SF/SS/SR/SL
-        Dim bolt As String = ConvertBoltToCode()                 ' Y/N
+        Dim sm As String = ConvertSingleMultiToCode()
+        Dim leg As String = GetLegCode()
+        Dim bolt As String = ConvertBoltToCode()
 
         Dim files = IO.Directory.GetFiles(stsFolder, "*.ipt", IO.SearchOption.TopDirectoryOnly)
 
-        ' 1순위: STS + S/M + TU/PI + LSP + SIZE + LEG + BOLT 모두 만족 (길이 무시)
         For Each f In files
             Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
-
             If Not HasToken(n, "STS") Then Continue For
             If Not HasToken(n, sm) Then Continue For
-            If Not HasToken(n, typ) Then Continue For
-            If Not HasToken(n, mdl) Then Continue For
-            If Not HasToken(n, sizeCode) Then Continue For
             If Not HasToken(n, leg) Then Continue For
             If Not HasToken(n, bolt) Then Continue For
-
             Return f
         Next
 
-        ' 2순위(너가 말한 "핵심만"): STS + S/M + LEG + BOLT
         For Each f In files
             Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
-
             If Not HasToken(n, "STS") Then Continue For
-            If Not HasToken(n, sm) Then Continue For
             If Not HasToken(n, leg) Then Continue For
             If Not HasToken(n, bolt) Then Continue For
+            Return f
+        Next
 
+        For Each f In files
+            Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
+            If Not HasToken(n, "STS") Then Continue For
+            If Not HasToken(n, leg) Then Continue For
             Return f
         Next
 
         Return ""
     End Function
 
-    ' [NEW] STS: 불러오기용 핵심조건만으로 파일 1개 선택
-    ' 조건: STS / (S|M) / (SF|SS|SR|SL) / (Y|N)
-    Private Function FindStsFileByCoreKeys() As String
-        Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
-        If mat <> "STS" Then Return ""
-
-        Dim folder As String = IO.Path.Combine(SUPPORT_BASE_PATH, "STS_SUPPORT")
-        If Not IO.Directory.Exists(folder) Then Return ""
-
-        Dim sm As String = ConvertSingleMultiToCode()     ' "S" or "M"
-        Dim leg As String = GetLegCode()                  ' "SF".."SL"
-        Dim bolt As String = ConvertBoltToCode()          ' "Y" or "N"
-
-        ' 우선순위 매칭 패턴(정확 매칭 -> 부분 매칭)
-        ' 파일명 어딘가에 "-S-" 또는 "_S_" 같은 구분자가 있을 수도 있으니 유연하게 검사
-        Dim files = IO.Directory.GetFiles(folder, "*.ipt", IO.SearchOption.TopDirectoryOnly)
-
-        ' 1) 가장 엄격: STS + S/M + LEG + BOLT 모두 포함
-        For Each f In files
-            Dim n = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
-            If n.Contains("STS") AndAlso n.Contains(sm) AndAlso n.Contains(leg) AndAlso n.Contains(bolt) Then
-                Return f
-            End If
-        Next
-
-        ' 2) STS + LEG + BOLT
-        For Each f In files
-            Dim n = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
-            If n.Contains("STS") AndAlso n.Contains(leg) AndAlso n.Contains(bolt) Then
-                Return f
-            End If
-        Next
-
-        ' 3) STS + LEG
-        For Each f In files
-            Dim n = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
-            If n.Contains("STS") AndAlso n.Contains(leg) Then
-                Return f
-            End If
-        Next
-
-        Return ""
-    End Function
     Private Function ApplyTempAxisToAxisPreview(supportOcc As ComponentOccurrence,
                                             targetOcc As ComponentOccurrence,
                                             ByRef constraintStore As AssemblyConstraint,
-                                            Optional preferAxisZName As Boolean = False) As Boolean
+                                            Optional preferAxisZName As Boolean = False,
+                                            Optional spawnPoint As Inventor.Point = Nothing) As Boolean
+
         If Globals.g_inventorApplication Is Nothing Then Return False
         If supportOcc Is Nothing OrElse targetOcc Is Nothing Then Return False
+
+        ' [FIX] tg 스코프 고정
+        Dim app As Inventor.Application = Globals.g_inventorApplication
+        Dim tg As Inventor.TransientGeometry = app.TransientGeometry
 
         Dim doc As Document = Globals.g_inventorApplication.ActiveDocument
         If doc Is Nothing OrElse doc.DocumentType <> DocumentTypeEnum.kAssemblyDocumentObject Then Return False
@@ -1748,25 +1857,21 @@ Public Class CreateSupportForm
         Dim asm As AssemblyDocument = CType(doc, AssemblyDocument)
         Dim asmDef As AssemblyComponentDefinition = asm.ComponentDefinition
 
-        ' 0) 기존 해당 구속 제거(넘겨받은 constraintStore)
         Try
             If constraintStore IsNot Nothing Then constraintStore.Delete()
         Catch
         End Try
         constraintStore = Nothing
 
-        ' 1) Support 고정 해제
         Try
             supportOcc.Grounded = False
         Catch
         End Try
 
-        ' 2) Support 축 Proxy (SAD는 Axis_Z 이름 우선)
         Dim supportAxisProxy As WorkAxisProxy = Nothing
         If preferAxisZName Then
             supportAxisProxy = GetAxisZProxyPreferNamed(supportOcc, "AXIS_Z")
         Else
-            ' 기존처럼 "원점 Z축"
             supportAxisProxy = GetSupportOriginZAxisProxy(supportOcc)
         End If
 
@@ -1775,21 +1880,110 @@ Public Class CreateSupportForm
             Return False
         End If
 
-        ' 3) 타겟 원통면 Proxy
-        Dim targetFaceProxy As FaceProxy = GetTargetCylinderFaceProxy(targetOcc)
-        If targetFaceProxy Is Nothing Then
-            MessageBox.Show("타겟 파트에서 원통면을 찾을 수 없습니다.", "형상 찾기 실패")
+        ' ★ 구속 전에, 서포트를 스폰점 근처로 먼저 붙여놓는다(날아감 감소)
+        If spawnPoint IsNot Nothing Then
+            NudgeOccurrenceAxisToPoint(supportOcc, supportAxisProxy, spawnPoint)
+        End If
+
+        Dim targetAxisProxy As WorkAxisProxy = GetTargetCylinderAxisProxyNearPick(targetOcc, m_lastPickPoint)
+        ' [DEBUG] 타겟 축 프록시 생성 여부
+        Try
+            Dim cntCyl As Integer = 0
+            Try
+                cntCyl = GetCylinderFaceProxiesFromOccurrence(targetOcc).Count
+            Catch
+                cntCyl = -1
+            End Try
+
+            Globals.g_inventorApplication.StatusBarText =
+        $"[AxisDebug] targetCylFaces={cntCyl}  targetAxisProxy={(If(targetAxisProxy IsNot Nothing, "OK", "NG"))}"
+        Catch
+        End Try
+
+
+        If targetAxisProxy Is Nothing Then
+            MessageBox.Show("타겟 파트에서 원통 축을 만들 수 없습니다.", "형상 찾기 실패")
             Return False
         End If
 
-        ' 4) Mate 구속 (kInferredLine)
         Try
+            ' ★ 구속 걸기 전에 방향/위치를 먼저 대충 맞춰서 솔버의 "다른 해" 점프를 막는다
+            'PreAlignOccurrenceToTargetAxis(supportOcc, targetFaceProxy, supportAxisProxy, spawnPoint)
+
+            ' =========================================================
+            ' [CHANGED - TEST] (C) 축방향 잠금(WorkPlane 생성 + Flush) "끄기"
+            ' - 아래 흐름만 유지:
+            '   (A) 스폰점 WorkPoint 생성
+            '   (B) Support WorkPointProxy ↔ 스폰 WorkPoint : Point-Point Mate
+            '   (D) Support 축 ↔ Target 원통 축 : Axis Mate
+            ' =========================================================
+
+            Try
+                ' --- 기존 잠금 구속/기하 제거 ---
+                SafeRun(Sub()
+                            If m_tempSpawnConstraint IsNot Nothing Then
+                                m_tempSpawnConstraint.Delete()
+                            End If
+                        End Sub)
+                m_tempSpawnConstraint = Nothing
+
+                SafeRun(Sub()
+                            If m_tempSpawnWorkPoint IsNot Nothing Then
+                                m_tempSpawnWorkPoint.Delete()
+                            End If
+                        End Sub)
+                m_tempSpawnWorkPoint = Nothing
+
+                ' (C)에서 쓰던 것들도 혹시 남아있으면 삭제만 해둔다
+                SafeRun(Sub()
+                            If m_tempAxialLockConstraint IsNot Nothing Then
+                                m_tempAxialLockConstraint.Delete()
+                            End If
+                        End Sub)
+                m_tempAxialLockConstraint = Nothing
+
+                SafeRun(Sub()
+                            If m_tempAxialLockPlane IsNot Nothing Then
+                                m_tempAxialLockPlane.Delete()
+                            End If
+                        End Sub)
+                m_tempAxialLockPlane = Nothing
+
+                If spawnPoint IsNot Nothing Then
+
+                    ' (A) WorkPoint 고정 생성
+                    m_tempSpawnWorkPoint = asmDef.WorkPoints.AddFixed(spawnPoint)
+
+                    ' (B) ★점-점 Mate로 "위치"를 고정 (Support WorkPoint ↔ 스폰 WorkPoint)
+                    Dim supportOriginWpProxy As WorkPointProxy = GetSupportWorkPointProxyOnAxis(supportOcc, supportAxisProxy)
+
+
+                    If supportOriginWpProxy IsNot Nothing Then
+                        m_tempSpawnConstraint =
+                        asmDef.Constraints.AddMateConstraint(
+                            supportOriginWpProxy,
+                            m_tempSpawnWorkPoint,
+                            0.0,
+                            InferredTypeEnum.kInferredPoint,
+                            InferredTypeEnum.kInferredPoint
+                        )
+                    Else
+                        Return False
+                    End If
+
+                    ' (C) 축방향 잠금(평면+Flush) — 여기서 "완전히 생략"
+                End If
+            Catch
+            End Try
+
+            ' (D) 축-축 Mate (마지막)
             constraintStore = asmDef.Constraints.AddMateConstraint(
-            supportAxisProxy,
-            targetFaceProxy,
-            0.0,
-            InferredTypeEnum.kInferredLine,
-            InferredTypeEnum.kInferredLine)
+    supportAxisProxy,
+    targetAxisProxy,
+    0.0,
+    InferredTypeEnum.kInferredLine,
+    InferredTypeEnum.kInferredLine)
+
 
             Globals.g_inventorApplication.ActiveView.Update()
             Return (constraintStore IsNot Nothing)
@@ -1798,49 +1992,13 @@ Public Class CreateSupportForm
             MessageBox.Show("구속 실패: " & ex.Message & vbCrLf & "원통면 중심축 인식 실패", "구속 오류")
             Return False
         End Try
+
     End Function
 
-    ' [NEW] 타겟 파트 내부의 WorkAxis 중, 원통면 중심과 정확히 일치하는 축을 찾아 Proxy로 반환
-    ' [NEW] 축이 있으면 축을 반환, 없으면 원통면을 반환 (자동 중심축 구속용)
-    ' [NEW] 타겟 파트의 "가장 큰 원통면"을 찾아 어셈블리 레벨 Proxy로 반환
-    Private Function GetTargetCylinderFaceProxy(occ As ComponentOccurrence) As FaceProxy
-        Try
-            If occ Is Nothing Then Return Nothing
-
-            Dim bestFace As Face = Nothing
-            Dim maxRadius As Double = -1.0
-
-            ' 파트 내의 모든 면을 검사하여 가장 큰 원통면(메인 파이프)을 찾음
-            For Each body As SurfaceBody In occ.Definition.SurfaceBodies
-                For Each f As Face In body.Faces
-                    If f.SurfaceType = SurfaceTypeEnum.kCylinderSurface Then
-                        Dim cyl As Cylinder = CType(f.Geometry, Cylinder)
-                        If cyl.Radius > maxRadius Then
-                            maxRadius = cyl.Radius
-                            bestFace = f
-                        End If
-                    End If
-                Next
-            Next
-
-            If bestFace Is Nothing Then Return Nothing
-
-            ' [중요] CreateGeometryProxy를 통해 어셈블리 맥락의 객체(Proxy)로 변환해야 함
-            ' 이걸 안 하면 "매개 변수가 틀립니다(E_INVALIDARG)" 오류 발생
-            Dim proxyObj As Object = Nothing
-            occ.CreateGeometryProxy(bestFace, proxyObj)
-
-            Return TryCast(proxyObj, FaceProxy)
-        Catch
-            Return Nothing
-        End Try
-    End Function
-
-    ' [NEW] Support의 "원점 Z축"을 정확히 가져오는 함수 (Item 3 = Z축)
     Private Function GetSupportOriginZAxisProxy(occ As ComponentOccurrence) As WorkAxisProxy
         Try
             If occ Is Nothing Then Return Nothing
-            ' Inventor Part 파일의 WorkAxes 1=X, 2=Y, 3=Z (고정 불변)
+
             Dim zAxis As WorkAxis = occ.Definition.WorkAxes.Item(3)
 
             Dim proxyObj As Object = Nothing
@@ -1850,37 +2008,167 @@ Public Class CreateSupportForm
             Return Nothing
         End Try
     End Function
+    ' =========================
+    ' [NEW] Occurrence에서 원통 FaceProxy를 안전하게 수집(조립품 컨텍스트 우선)
+    ' - 1순위: occ.SurfaceBodies (SurfaceBodyProxy)에서 FaceProxy를 직접 얻음
+    ' - 2순위: occ.Definition.SurfaceBodies → CreateGeometryProxy로 FaceProxy 생성
+    ' =========================
+    Private Function GetCylinderFaceProxiesFromOccurrence(occ As ComponentOccurrence) As List(Of FaceProxy)
+        Dim result As New List(Of FaceProxy)
 
-    ' [NEW] STS + (S|M) + (TU|PI) + "SAD" + (SIZE) 로 SAD 파일 찾기
-    ' 예: STS-S-TU-SAD-06B  (구분자 _ 또는 - 기준 토큰 매칭)
+        Try
+            If occ Is Nothing Then Return result
+
+            ' 1) Assembly 컨텍스트(Proxy) 우선: occ.SurfaceBodies
+            Try
+                Dim sbs As SurfaceBodies = occ.SurfaceBodies
+                If sbs IsNot Nothing AndAlso sbs.Count > 0 Then
+                    For Each sb As SurfaceBody In sbs
+                        If sb Is Nothing Then Continue For
+                        For Each f As Face In sb.Faces
+                            If f Is Nothing Then Continue For
+                            If f.SurfaceType = SurfaceTypeEnum.kCylinderSurface Then
+                                Dim fp As FaceProxy = TryCast(f, FaceProxy)
+                                If fp IsNot Nothing Then result.Add(fp)
+                            End If
+                        Next
+                    Next
+                End If
+            Catch
+                ' 무시하고 2)로
+            End Try
+
+            ' 2) 그래도 없으면: Definition(로컬) → CreateGeometryProxy
+            If result.Count = 0 Then
+                Dim partDef As PartComponentDefinition = TryCast(occ.Definition, PartComponentDefinition)
+                If partDef IsNot Nothing Then
+                    For Each body As SurfaceBody In partDef.SurfaceBodies
+                        If body Is Nothing Then Continue For
+                        For Each f As Face In body.Faces
+                            If f Is Nothing Then Continue For
+                            If f.SurfaceType <> SurfaceTypeEnum.kCylinderSurface Then Continue For
+
+                            Dim prxObj As Object = Nothing
+                            occ.CreateGeometryProxy(f, prxObj)
+                            Dim fp As FaceProxy = TryCast(prxObj, FaceProxy)
+                            If fp IsNot Nothing Then result.Add(fp)
+                        Next
+                    Next
+                End If
+            End If
+
+        Catch
+        End Try
+
+        Return result
+    End Function
+
+
+    ' =========================
+    ' [CHANGED] 클릭점(pickPt)에 가장 가까운 "원통 FaceProxy"를 찾는다
+    ' - 변경 포인트: occ.Definition.SurfaceBodies 직접 루프 → (위 NEW) FaceProxy 수집 함수 사용
+    ' =========================
+    Private Function GetTargetCylinderFaceProxyNearPick(occ As ComponentOccurrence,
+                                                    pickPt As Inventor.Point) As FaceProxy
+        Try
+            If Globals.g_inventorApplication Is Nothing Then Return Nothing
+            If occ Is Nothing Then Return Nothing
+            If pickPt Is Nothing Then Return Nothing
+
+            Dim app = Globals.g_inventorApplication
+
+            Dim candidates As List(Of FaceProxy) = GetCylinderFaceProxiesFromOccurrence(occ)
+            If candidates Is Nothing OrElse candidates.Count = 0 Then Return Nothing
+
+            Dim best As FaceProxy = Nothing
+            Dim bestDist As Double = Double.MaxValue
+
+            For Each fp As FaceProxy In candidates
+                If fp Is Nothing Then Continue For
+
+                Dim d As Double = Double.MaxValue
+                Try
+                    d = app.MeasureTools.GetMinimumDistance(pickPt, fp)
+                Catch
+                    Continue For
+                End Try
+
+                If d < bestDist Then
+                    bestDist = d
+                    best = fp
+                End If
+            Next
+
+            Return best
+
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+
+    ' =========================
+    ' [CHANGED] 타겟 Occurrence에서 "대표 원통 FaceProxy" 하나를 반환(반지름 최대)
+    ' - 변경 포인트: Definition 직접 루프 → FaceProxy 수집 후, Geometry를 Cylinder로 캐스팅
+    ' =========================
+    Private Function GetTargetCylinderFaceProxy(occ As ComponentOccurrence) As FaceProxy
+        Try
+            If occ Is Nothing Then Return Nothing
+
+            Dim candidates As List(Of FaceProxy) = GetCylinderFaceProxiesFromOccurrence(occ)
+            If candidates Is Nothing OrElse candidates.Count = 0 Then Return Nothing
+
+            Dim best As FaceProxy = Nothing
+            Dim bestR As Double = -1.0
+
+            For Each fp As FaceProxy In candidates
+                If fp Is Nothing Then Continue For
+
+                Dim cyl As Cylinder = Nothing
+                Try
+                    cyl = TryCast(fp.Geometry, Cylinder)
+                Catch
+                    cyl = Nothing
+                End Try
+                If cyl Is Nothing Then Continue For
+
+                If cyl.Radius > bestR Then
+                    bestR = cyl.Radius
+                    best = fp
+                End If
+            Next
+
+            Return best
+
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
     Private Function FindStsSadFile(stsFolder As String) As String
         If Not IO.Directory.Exists(stsFolder) Then Return ""
 
-        Dim sm As String = ConvertSingleMultiToCode()           ' S/M
-        Dim typ As String = ConvertTypeToCode(ttext.Text)       ' TU/PI
-        Dim sizeCode As String = ConvertSizeToCode(stext.Text)  ' 06B 등
+        Dim sm As String = ConvertSingleMultiToCode()
+        Dim sizeCode As String = ConvertSizeToCode(stext.Text)
 
         Dim files = IO.Directory.GetFiles(stsFolder, "*.ipt", IO.SearchOption.TopDirectoryOnly)
 
-        ' 1순위: STS + S/M + TU/PI + SAD + SIZE
         For Each f In files
             Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
 
             If Not HasToken(n, "STS") Then Continue For
             If Not HasToken(n, sm) Then Continue For
-            If Not HasToken(n, typ) Then Continue For
             If Not HasToken(n, "SAD") Then Continue For
             If Not HasToken(n, sizeCode) Then Continue For
 
             Return f
         Next
 
-        ' 2순위: STS + TU/PI + SAD + SIZE (S/M 없는 파일 대비)
+        ' fallback: 사이즈만 맞는 SAD
         For Each f In files
             Dim n As String = IO.Path.GetFileNameWithoutExtension(f).ToUpper()
 
             If Not HasToken(n, "STS") Then Continue For
-            If Not HasToken(n, typ) Then Continue For
             If Not HasToken(n, "SAD") Then Continue For
             If Not HasToken(n, sizeCode) Then Continue For
 
@@ -1889,14 +2177,14 @@ Public Class CreateSupportForm
 
         Return ""
     End Function
-    ' [NEW] Support/SAD 파트에서 Axis_Z(이름) 우선, 없으면 원점 Z축(Item(3))으로 Proxy 반환
+
+
     Private Function GetAxisZProxyPreferNamed(occ As ComponentOccurrence, Optional axisName As String = "AXIS_Z") As WorkAxisProxy
         Try
             If occ Is Nothing Then Return Nothing
 
             Dim wa As WorkAxis = Nothing
 
-            ' 1) 이름으로 먼저 찾기
             Try
                 For Each a As WorkAxis In occ.Definition.WorkAxes
                     If a IsNot Nothing AndAlso a.Name IsNot Nothing Then
@@ -1909,7 +2197,6 @@ Public Class CreateSupportForm
             Catch
             End Try
 
-            ' 2) 없으면 원점 Z축(3)
             If wa Is Nothing Then
                 wa = occ.Definition.WorkAxes.Item(3)
             End If
@@ -1922,40 +2209,58 @@ Public Class CreateSupportForm
         End Try
     End Function
 
-
-
 #End Region
 
 #Region "K. 파일명 생성 규칙(UpdateFilename 실시간)"
-    ' [NEW] 길이값을 파일명용 문자열로 변환
-    ' 예: 27.5 → L27P5 / 30 → L30
-    ' [CHANGED] 소수점 문화권(, / .) 혼용 입력에도 안정적으로 동작하도록 파싱 로직 강화
+
+    ' [NEW] 재질 규칙 반영: PVC는 Bolt=N 고정/잠금
+    Private Sub ApplyMaterialRules()
+        Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
+
+        If mat = "PVC" Then
+            If btype IsNot Nothing Then
+                btype.Checked = False
+                btype.Enabled = False
+                btype.BackColor = Draw.Color.FromArgb(60, 60, 60)
+            End If
+
+            ' PVC 기본 CF
+            If String.IsNullOrWhiteSpace(m_legCodePVC) Then m_legCodePVC = "CF"
+        Else
+            If btype IsNot Nothing Then
+                btype.Enabled = True
+                btype.BackColor = cBtnNormal
+            End If
+
+            ' STS 기본 SF
+            If String.IsNullOrWhiteSpace(m_legCode) Then m_legCode = "SF"
+        End If
+
+    End Sub
+
+
     Private Function ConvertLengthToFileToken(lenText As String) As String
         Dim raw As String = If(lenText, "").Trim()
         If raw = "" Then Return "L0"
 
-
         Dim v As Double = 0
 
-        ' 1) "." 기준(인벤터/코드에서 Invariant로 뽑아낸 값) 먼저 시도
         If Not Double.TryParse(raw,
-                           Globalization.NumberStyles.Any,
-                           Globalization.CultureInfo.InvariantCulture,
-                           v) Then
-            ' 2) 현재 문화권(한국식 , 소수점 등)도 허용
+                               Globalization.NumberStyles.Any,
+                               Globalization.CultureInfo.InvariantCulture,
+                               v) Then
             If Not Double.TryParse(raw, v) Then
                 Return "L0"
             End If
         End If
 
         Dim s As String = v.ToString("0.###", Globalization.CultureInfo.InvariantCulture)
-        s = s.Replace(".", "P")   ' 소수점 → P
+        s = s.Replace(".", "P")
         Return "L" & s
     End Function
 
     Private Function ConvertSizeToCode(sizeText As String) As String
         sizeText = If(sizeText, "").Trim()
-
         If sizeText = "" Then Return "000"
 
         Select Case sizeText.ToUpper()
@@ -2002,15 +2307,30 @@ Public Class CreateSupportForm
     End Function
 
     Private Function ConvertBoltToCode() As String
+        Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
+        If mat = "PVC" Then Return "N" ' PVC 고정
+
         If btype IsNot Nothing AndAlso btype.Checked Then Return "Y"
         Return "N"
     End Function
 
+
     Private Function GetLegCode() As String
         Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
-        If mat = "STS" Then Return m_legCode
+
+        If mat = "STS" Then
+            If String.IsNullOrWhiteSpace(m_legCode) Then m_legCode = "SF"
+            Return m_legCode
+        End If
+
+        If mat = "PVC" Then
+            If String.IsNullOrWhiteSpace(m_legCodePVC) Then m_legCodePVC = "CF"
+            Return m_legCodePVC
+        End If
+
         Return "GEN"
     End Function
+
 
     Private Sub UpdateFilename()
         If filename Is Nothing Then Exit Sub
@@ -2022,7 +2342,6 @@ Public Class CreateSupportForm
         Dim sizeCode As String = ConvertSizeToCode(stext.Text)
         Dim leg As String = GetLegCode()
         Dim bolt As String = ConvertBoltToCode()
-
         Dim lenPart As String = ConvertLengthToFileToken(splength.Text)
 
         If mat = "" OrElse typ = "" OrElse mdl = "" OrElse sizeCode = "" Then
@@ -2033,12 +2352,9 @@ Public Class CreateSupportForm
         filename.Text = $"{mat}-{sm}-{typ}-{mdl}-{sizeCode}-{leg}-{bolt}-{lenPart}"
     End Sub
 
-
-
 #End Region
 
 #Region "L. splength 계산 + Distance MouseWheel"
-
 
     Private Sub Distance_MouseWheel(sender As Object, e As MouseEventArgs)
         Dim v As Double = 0
@@ -2060,7 +2376,6 @@ Public Class CreateSupportForm
             Case "1/2""" : Return 6.1
             Case "3/8""" : Return 4.5
             Case "1/4""" : Return 2.9
-             ' ---------- PIPE ----------
             Case "20A" : Return 13.0
             Case "25A" : Return 16.4
         End Select
@@ -2076,16 +2391,80 @@ Public Class CreateSupportForm
             Exit Sub
         End If
 
-        ' [CHANGED] 파일명/파싱 흔들림 방지: splength는 항상 Invariant(소수점 ".")로 출력
-        splength.Text = Math.Max(0, baseLen - GetSizeOffset(stext.Text)).ToString("0.00", Globalization.CultureInfo.InvariantCulture)
+        Dim mat As String = If(mtext.Text, "").Trim().ToUpper()
+
+        If mat = "PVC" Then
+            ' PVC: 보정 금지 → splength = length
+            splength.Text = Math.Max(0, baseLen) _
+        .ToString("0.00", Globalization.CultureInfo.InvariantCulture)
+        Else
+            ' STS: 기존 보정 유지
+            splength.Text = Math.Max(0, baseLen - GetSizeOffset(stext.Text)) _
+        .ToString("0.00", Globalization.CultureInfo.InvariantCulture)
+        End If
+
         UpdateFilename()
     End Sub
 
-
-
 #End Region
 
-#Region "M. Geometry Helpers(외경/사이즈/오차)"
+#Region "M. Geometry Helpers(외경/사이즈/오차) + PickOccurrenceWithPoint"
+    ' [NEW] 바닥면(평면) 경사각(도) 계산: 전역 Z축 대비 0~90°
+    Private Function GetFloorSlopeDeg(pickedFaceObj As Object) As Double
+        Try
+            Dim app = Globals.g_inventorApplication
+            If app Is Nothing Then Return 0
+
+            Dim fp As FaceProxy = TryCast(pickedFaceObj, FaceProxy)
+            Dim f As Face = TryCast(pickedFaceObj, Face)
+
+            Dim geom As Object = Nothing
+            Dim occ As ComponentOccurrence = Nothing
+
+            If fp IsNot Nothing Then
+                geom = fp.Geometry
+                occ = fp.ContainingOccurrence
+            ElseIf f IsNot Nothing Then
+                geom = f.Geometry
+            Else
+                Return 0
+            End If
+
+            Dim pl As Plane = TryCast(geom, Plane)
+            If pl Is Nothing Then Return 0
+
+            Dim n As Vector = pl.Normal
+            If n Is Nothing Then Return 0
+
+            ' ★ 핵심: 어셈블리에서 선택한 FaceProxy면, 노멀을 Occurrence 변환으로 회전시켜 전역 기준으로 맞춘다
+            If occ IsNot Nothing Then
+                Try
+                    Dim nnv As Vector = app.TransientGeometry.CreateVector(n.X, n.Y, n.Z)
+                    nnv.TransformBy(occ.Transformation)   ' Vector라 translation은 영향 거의 없고, 회전만 반영됨
+                    n = nnv
+                Catch
+                End Try
+            End If
+
+            Dim z As Vector = app.TransientGeometry.CreateVector(0, 0, 1)
+
+            Dim dot As Double = Math.Abs(n.DotProduct(z))
+            Dim nLen As Double = n.Length
+            If nLen <= 0 Then Return 0
+
+            Dim cosv As Double = dot / nLen   ' z 길이는 1이라 생략 가능
+            If cosv > 1 Then cosv = 1
+            If cosv < -1 Then cosv = -1
+
+            Dim deg As Double = Math.Acos(cosv) * 180.0 / Math.PI
+            Return deg
+        Catch
+            Return 0
+        End Try
+    End Function
+
+
+
 
 
     Private Function GetMaxOuterDiameter(comp As ComponentOccurrence) As Double
@@ -2109,100 +2488,87 @@ Public Class CreateSupportForm
     End Function
 
     Private Function GetSizeText(typeText As String, dia As Double) As String
-        Dim t As String = (typeText & "").Trim().ToUpper()
+        ' ★ TYPE이 PIPE로 잡혀도, 실제 외경이 튜브 규격이면 인치로 먼저 매핑
+        If IsInRange(dia, 25.4, 1.0) Then Return "1"""
+        If IsInRange(dia, 19.05, 1.0) Then Return "3/4"""
+        If IsInRange(dia, 12.7, 1.0) Then Return "1/2"""
+        If IsInRange(dia, 9.53, 1.0) Then Return "3/8"""
+        If IsInRange(dia, 6.35, 1.0) Then Return "1/4"""
+        If IsInRange(dia, 4.76, 1.0) Then Return "3/16"""
+        If IsInRange(dia, 3.18, 1.0) Then Return "1/8"""
 
-        If t = "TUBE" Then
-            If IsInRange(dia, 25.4, 1.0) Then Return "1"""
-            If IsInRange(dia, 19.05, 1.0) Then Return "3/4"""
-            If IsInRange(dia, 12.7, 1.0) Then Return "1/2"""
-            If IsInRange(dia, 9.53, 1.0) Then Return "3/8"""
-            If IsInRange(dia, 6.35, 1.0) Then Return "1/4"""
-            If IsInRange(dia, 4.76, 1.0) Then Return "3/16"""
-            If IsInRange(dia, 3.18, 1.0) Then Return "1/8"""
-            Return Math.Round(dia, 2).ToString() & "mm"
-        End If
+        ' 그 다음 PIPE(A) 규격 매핑
+        If IsInRange(dia, 60.33, 1.0) Then Return "50A"
+        If IsInRange(dia, 48.26, 1.0) Then Return "40A"
+        If IsInRange(dia, 33.4, 1.0) Then Return "25A"
+        If IsInRange(dia, 26.67, 1.0) Then Return "20A"
+        If IsInRange(dia, 21.34, 1.0) Then Return "15A"
 
-        If t = "PIPE" Then
-            If IsInRange(dia, 60.33, 1.0) Then Return "50A"
-            If IsInRange(dia, 48.26, 1.0) Then Return "40A"
-            If IsInRange(dia, 33.4, 1.0) Then Return "25A"
-            If IsInRange(dia, 26.67, 1.0) Then Return "20A"
-            If IsInRange(dia, 21.34, 1.0) Then Return "15A"
-            Return Math.Round(dia, 2).ToString() & "mm"
-        End If
-
-        Return ""
+        ' 매칭 실패면 mm로
+        Return Math.Round(dia, 2).ToString("0.##", Globalization.CultureInfo.InvariantCulture) & "mm"
     End Function
+
 
     Private Function IsInRange(value As Double, target As Double, tol As Double) As Boolean
         Return Math.Abs(value - target) <= tol
     End Function
-    ' [NEW] Occurrence + 클릭한 3D 포인트(ModelPosition)까지 얻는 Pick
-    ' [NEW] Occurrence + 클릭한 3D 포인트(ModelPosition)까지 얻는 Pick
+    ' [CHANGED] Occurrence + 클릭 3D 포인트(ModelPosition)까지 얻는 Pick
+    ' - CommandManager.Pick은 Point를 주지 않아서 InteractionEvents.SelectEvents로 받는다
     Private Function PickOccurrenceWithPoint(prompt As String, ByRef pickedPt As Inventor.Point) As ComponentOccurrence
         pickedPt = Nothing
         If Globals.g_inventorApplication Is Nothing Then Return Nothing
 
         Dim app = Globals.g_inventorApplication
+
+        Dim pickedOcc As ComponentOccurrence = Nothing
+        Dim gotOne As Boolean = False
+
+        ' [NEW] ByRef(pickedPt)를 람다에서 직접 건드리지 않기 위한 임시 변수
+        Dim tempPickedPt As Inventor.Point = Nothing
+
         Dim ie As InteractionEvents = Nothing
         Dim se As SelectEvents = Nothing
-
-        Dim done As Boolean = False
-        Dim pickedOcc As ComponentOccurrence = Nothing
-        Dim pickedModelPos As Inventor.Point = Nothing
 
         Try
             ie = app.CommandManager.CreateInteractionEvents()
             se = ie.SelectEvents
 
+            ' 선택 필터: 조립품의 Leaf Occurrence
+            se.ClearSelectionFilter()
             se.AddSelectionFilter(SelectionFilterEnum.kAssemblyLeafOccurrenceFilter)
             se.SingleSelectEnabled = True
 
-            Dim onSelectHandler As SelectEventsSink_OnSelectEventHandler =
-            Sub(JustSelectedEntities As ObjectsEnumerator,
-                SelectionDevice As SelectionDeviceEnum,
-                ModelPosition As Inventor.Point,
-                ViewPosition As Inventor.Point2d,
-                View As Inventor.View)
-
-                Try
-                    If JustSelectedEntities Is Nothing OrElse JustSelectedEntities.Count < 1 Then Return
-                    Dim occ = TryCast(JustSelectedEntities.Item(1), ComponentOccurrence)
-                    If occ Is Nothing Then Return
-
-                    pickedOcc = occ
-                    pickedModelPos = ModelPosition
-                    done = True
-                    Try : ie.Stop() : Catch : End Try
-                Catch
-                End Try
-            End Sub
-
-            Dim onTerminateHandler As InteractionEventsSink_OnTerminateEventHandler =
-            Sub()
-                ' ESC / 우클릭 종료 등
-                done = True
-            End Sub
-
-            AddHandler se.OnSelect, onSelectHandler
-            AddHandler ie.OnTerminate, onTerminateHandler
-
+            ' 프롬프트 표시
             ie.StatusBarText = prompt
+
+            AddHandler se.OnSelect,
+        Sub(JustSelectedEntities As ObjectsEnumerator,
+            SelectionDevice As SelectionDeviceEnum,
+            ModelPosition As Point,
+            ViewPosition As Point2d,
+            View As Inventor.View)
+
+            Try
+                If JustSelectedEntities Is Nothing OrElse JustSelectedEntities.Count < 1 Then Return
+
+                Dim o As Object = JustSelectedEntities.Item(1)
+                Dim occ As ComponentOccurrence = TryCast(o, ComponentOccurrence)
+                If occ Is Nothing Then Return
+
+                pickedOcc = occ
+                tempPickedPt = ModelPosition  ' ★ 여기만 로컬 변수로 저장
+                gotOne = True
+            Catch
+            End Try
+        End Sub
+
             ie.Start()
 
-            Do While isFormRunning AndAlso Not done AndAlso ie IsNot Nothing
+            ' 유저가 하나 고를 때까지 대기
+            While Not gotOne
                 System.Windows.Forms.Application.DoEvents()
-            Loop
-
-            Try
-                RemoveHandler se.OnSelect, onSelectHandler
-            Catch
-            End Try
-
-            Try
-                RemoveHandler ie.OnTerminate, onTerminateHandler
-            Catch
-            End Try
+                If Not isFormRunning Then Exit While
+            End While
 
         Catch
         Finally
@@ -2210,10 +2576,589 @@ Public Class CreateSupportForm
                 If ie IsNot Nothing Then ie.Stop()
             Catch
             End Try
+            Try
+                ie = Nothing
+                se = Nothing
+            Catch
+            End Try
         End Try
 
-        pickedPt = pickedModelPos
+        ' [NEW] 루프 종료 후에만 ByRef에 대입 (BC36638 해결)
+        pickedPt = tempPickedPt
+
+
         Return pickedOcc
+    End Function
+    ' [NEW] Occurrence에서 "대표 원통"의 중심축(Line)을 어셈블리 좌표로 만든다
+    Private Function GetOccurrenceMainCylinderAxisLine(occ As ComponentOccurrence) As Inventor.Line
+        Try
+            If Globals.g_inventorApplication Is Nothing Then Return Nothing
+            If occ Is Nothing Then Return Nothing
+
+            Dim app = Globals.g_inventorApplication
+            Dim tg = app.TransientGeometry
+
+            Dim bestFace As Face = Nothing
+            Dim maxRadius As Double = -1.0
+
+            For Each body As SurfaceBody In occ.Definition.SurfaceBodies
+                For Each f As Face In body.Faces
+                    If f.SurfaceType = SurfaceTypeEnum.kCylinderSurface Then
+                        Dim cyl As Cylinder = CType(f.Geometry, Cylinder)
+                        If cyl.Radius > maxRadius Then
+                            maxRadius = cyl.Radius
+                            bestFace = f
+                        End If
+                    End If
+                Next
+            Next
+
+            If bestFace Is Nothing Then Return Nothing
+
+            Dim bestCyl As Cylinder = CType(bestFace.Geometry, Cylinder)
+
+            ' 로컬(파트) 축: BasePoint + AxisVector
+            Dim p0 As Inventor.Point = tg.CreatePoint(bestCyl.BasePoint.X, bestCyl.BasePoint.Y, bestCyl.BasePoint.Z)
+            Dim v0 As Inventor.Vector = tg.CreateVector(bestCyl.AxisVector.X, bestCyl.AxisVector.Y, bestCyl.AxisVector.Z)
+
+            ' 어셈블리 좌표로 변환(회전+이동)
+            p0.TransformBy(occ.Transformation)
+            v0.TransformBy(occ.Transformation)
+
+            Return tg.CreateLine(p0, v0)
+
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    ' [NEW] 클릭점(P)을 축 라인에 직교투영해서 P′를 만든다
+    Private Function ProjectPointToLine(pt As Inventor.Point, axisLine As Inventor.Line) As Inventor.Point
+        Try
+            If Globals.g_inventorApplication Is Nothing Then Return Nothing
+            If pt Is Nothing OrElse axisLine Is Nothing Then Return Nothing
+
+            Dim app = Globals.g_inventorApplication
+            Dim tg = app.TransientGeometry
+
+            Dim p0 As Inventor.Point = axisLine.RootPoint
+            Dim uv As UnitVector = TryCast(axisLine.Direction, UnitVector)
+            If uv Is Nothing Then Return tg.CreatePoint(p0.X, p0.Y, p0.Z)
+
+            Dim w As Inventor.Vector = tg.CreateVector(pt.X - p0.X, pt.Y - p0.Y, pt.Z - p0.Z)
+
+            ' UnitVector는 길이가 1이라 /vv 필요 없음
+            Dim t As Double = w.DotProduct(uv.AsVector())
+
+
+            Return tg.CreatePoint(
+     p0.X + uv.X * t,
+     p0.Y + uv.Y * t,
+     p0.Z + uv.Z * t
+ )
+
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    ' ============================================================
+    ' [CHANGED] 현재 선택된 타겟 + 마지막 클릭점 기준으로 "스폰점"을 만든다
+    ' - 기존: 대표(최대) 원통 축 기준 → 클릭한 구간이 달라지면 스폰이 엇나감
+    ' - 변경: "클릭점에 가장 가까운 원통 FaceProxy"의 축 기준으로 투영
+    ' ============================================================
+    Private Function GetSpawnPointOnTargetAxis() As Inventor.Point
+        Try
+            Dim app = Globals.g_inventorApplication
+            If app Is Nothing Then Return m_centerPoint
+            If m_selectedComponent Is Nothing Then Return m_centerPoint
+
+            ' 1) 기준점: 클릭점 우선(없으면 center)
+            Dim basePoint As Inventor.Point = If(m_lastPickPoint, m_centerPoint)
+            If basePoint Is Nothing Then Return m_centerPoint
+
+            ' 2) ★ 클릭점에 가장 가까운 원통 FaceProxy 선택
+            Dim fp As FaceProxy = GetTargetCylinderFaceProxyNearPick(m_selectedComponent, basePoint)
+            If fp Is Nothing Then
+                app.StatusBarText = "[SpawnDebug] 클릭 근처 원통 FaceProxy 없음 → 중심점 사용"
+                Return m_centerPoint
+            End If
+
+            ' 3) FaceProxy.Geometry는 Assembly 컨텍스트의 Cylinder여야 함
+            Dim cyl As Cylinder = Nothing
+            Try
+                cyl = TryCast(fp.Geometry, Cylinder)
+            Catch
+                cyl = Nothing
+            End Try
+
+            If cyl Is Nothing Then
+                app.StatusBarText = "[SpawnDebug] Cylinder 캐스팅 실패 → 중심점 사용"
+                Return m_centerPoint
+            End If
+
+            ' 4) ★ 이 축(Line)은 이미 Assembly 좌표계 기준
+            Dim axisLine As Inventor.Line = cyl.Axis
+            If axisLine Is Nothing Then
+                app.StatusBarText = "[SpawnDebug] 축(Line) 없음 → 중심점 사용"
+                Return m_centerPoint
+            End If
+
+            ' 5) 클릭점을 축에 직교투영 → 최종 스폰점
+            Dim proj As Inventor.Point = ProjectPointToLine(basePoint, axisLine)
+            If proj IsNot Nothing Then
+                app.StatusBarText =
+                $"[SpawnDebug] OK (Pick->Axis) : ({proj.X:F3}, {proj.Y:F3}, {proj.Z:F3})"
+                Return proj
+            End If
+
+            app.StatusBarText = "[SpawnDebug] 투영 실패 → 중심점 사용"
+            Return m_centerPoint
+
+        Catch ex As Exception
+            Try
+                Globals.g_inventorApplication.StatusBarText = "[SpawnDebug] 오류: " & ex.Message
+            Catch
+            End Try
+            Return m_centerPoint
+        End Try
+    End Function
+
+
+
+    ' [NEW] (Replace 성공 후) 이전 미리보기 임시파일 정리
+    Private Sub CleanupPrevPreviewTempFile(prevPath As String, newPath As String)
+        Try
+            If String.IsNullOrWhiteSpace(prevPath) Then Return
+            If String.IsNullOrWhiteSpace(newPath) Then Return
+            If String.Equals(prevPath.Trim(), newPath.Trim(), StringComparison.OrdinalIgnoreCase) Then Return
+
+            ' ★ prevPath가 "이번 세션 임시 생성" 목록에 있을 때만 삭제 (재사용 파일 보호)
+            If Not m_tempCreatedFiles.Contains(prevPath) Then Return
+            ' Inventor가 잡고 있을 수 있으니 닫고 지움
+            TryCloseDocumentIfOpen(prevPath)
+
+            Try : IO.File.SetAttributes(prevPath, IO.FileAttributes.Normal) : Catch : End Try
+
+            For i As Integer = 1 To 5
+                Try
+                    IO.File.Delete(prevPath)
+                    Exit For
+                Catch
+                    Try : System.Threading.Thread.Sleep(150) : Catch : End Try
+                End Try
+            Next
+
+            ' 목록에서도 제거(중복 누적 방지)
+            Try : m_tempCreatedFiles.Remove(prevPath) : Catch : End Try
+
+        Catch
+        End Try
+    End Sub
+    ' [기존] GetSupportOriginWorkPointProxy(...)
+    ' → [변경] 스폰점에 가장 가까운 WorkPoint를 찾아 Proxy 반환
+
+    Private Function GetSupportOriginWorkPointProxy(occ As ComponentOccurrence,
+                                               Optional nearPt As Inventor.Point = Nothing) As WorkPointProxy
+        Try
+            If occ Is Nothing Then Return Nothing
+
+            Dim app = Globals.g_inventorApplication
+            If app Is Nothing Then Return Nothing
+
+            Dim tg = app.TransientGeometry
+
+            Dim partDef As PartComponentDefinition = TryCast(occ.Definition, PartComponentDefinition)
+            If partDef Is Nothing Then Return Nothing
+
+            Dim bestWp As WorkPoint = Nothing
+            Dim bestD As Double = Double.MaxValue
+
+            ' nearPt가 없으면 기존처럼 1번을 우선 시도
+            If nearPt Is Nothing Then
+                Try
+                    Dim wp1 As WorkPoint = partDef.WorkPoints.Item(1)
+                    If wp1 IsNot Nothing Then
+                        Dim prxObj1 As Object = Nothing
+                        occ.CreateGeometryProxy(wp1, prxObj1)
+                        Return TryCast(prxObj1, WorkPointProxy)
+                    End If
+                Catch
+                End Try
+                Return Nothing
+            End If
+
+            ' nearPt 기준으로 "가장 가까운 WorkPoint" 선택
+            For Each wp As WorkPoint In partDef.WorkPoints
+                If wp Is Nothing Then Continue For
+
+                Dim p As Inventor.Point = Nothing
+                Try
+                    p = TryCast(wp.Point, Inventor.Point)
+                Catch
+                    p = Nothing
+                End Try
+                If p Is Nothing Then Continue For
+
+                ' 파트 좌표 → 어셈블리 좌표
+                Dim pg As Inventor.Point = tg.CreatePoint(p.X, p.Y, p.Z)
+                pg.TransformBy(occ.Transformation)
+
+                Dim dx = pg.X - nearPt.X
+                Dim dy = pg.Y - nearPt.Y
+                Dim dz = pg.Z - nearPt.Z
+                Dim d2 = dx * dx + dy * dy + dz * dz
+
+                If d2 < bestD Then
+                    bestD = d2
+                    bestWp = wp
+                End If
+            Next
+
+            If bestWp Is Nothing Then Return Nothing
+
+            Dim prxObj As Object = Nothing
+            occ.CreateGeometryProxy(bestWp, prxObj)
+            Return TryCast(prxObj, WorkPointProxy)
+
+        Catch
+            Return Nothing
+        End Try
+    End Function
+
+    Private Sub PreAlignOccurrenceToTargetAxis(
+    occ As ComponentOccurrence,
+    targetCylFaceProxy As FaceProxy,
+    occAxisProxy As WorkAxisProxy,
+    spawnPoint As Inventor.Point
+)
+        Try
+            If Globals.g_inventorApplication Is Nothing Then Exit Sub
+            If occ Is Nothing OrElse targetCylFaceProxy Is Nothing OrElse occAxisProxy Is Nothing Then Exit Sub
+            If spawnPoint Is Nothing Then Exit Sub
+
+            Dim app As Inventor.Application = Globals.g_inventorApplication
+            Dim tg As Inventor.TransientGeometry = app.TransientGeometry
+
+            ' 1) target 축 방향(UnitVector) 구하기
+            Dim cyl As Cylinder = TryCast(targetCylFaceProxy.Geometry, Cylinder)
+            If cyl Is Nothing Then Exit Sub
+
+            Dim nVec As Vector = cyl.AxisVector
+            If nVec Is Nothing OrElse nVec.Length <= 0 Then Exit Sub
+            Dim nUnit As UnitVector = tg.CreateUnitVector(nVec.X, nVec.Y, nVec.Z)
+
+            ' 2) Support(occ) 축 방향(UnitVector) 구하기
+            '    WorkAxisProxy.Geometry는 Line 일 때가 많다.
+            Dim ln As Inventor.Line = TryCast(occAxisProxy.Geometry, Inventor.Line)
+            If ln Is Nothing Then
+                ' 혹시 Line이 아니면 그냥 탈출(프리정렬 생략)
+                Exit Sub
+            End If
+
+            Dim sVec As Vector = ln.Direction
+            If sVec Is Nothing OrElse sVec.Length <= 0 Then Exit Sub
+            Dim sUnit As UnitVector = tg.CreateUnitVector(sVec.X, sVec.Y, sVec.Z)
+
+            ' 3) 이미 거의 평행이면 회전 불필요
+            Dim dp As Double = sUnit.DotProduct(nUnit)
+            If dp > 1 Then dp = 1
+            If dp < -1 Then dp = -1
+            If Math.Abs(dp) > 0.9999 Then
+                ' 방향만 거의 일치 → 위치만 스폰점으로 이동
+                Dim mT As Matrix = occ.Transformation
+                mT.Cell(1, 4) = spawnPoint.X
+                mT.Cell(2, 4) = spawnPoint.Y
+                mT.Cell(3, 4) = spawnPoint.Z
+                occ.Transformation = mT
+                Exit Sub
+            End If
+
+            ' 4) 회전축 = sUnit x nUnit, 회전각 = acos(dot)
+            Dim rotAxisVec As Vector = sUnit.CrossProduct(nUnit)
+            If rotAxisVec Is Nothing OrElse rotAxisVec.Length <= 0 Then Exit Sub
+            Dim rotAxis As UnitVector = tg.CreateUnitVector(rotAxisVec.X, rotAxisVec.Y, rotAxisVec.Z)
+
+            Dim ang As Double = Math.Acos(dp)
+
+            ' 5) 현재 occ 변환에 회전 적용(스폰점 기준으로 회전)
+            Dim mRot As Matrix = tg.CreateMatrix()
+            mRot.SetToRotation(ang, rotAxis, spawnPoint)
+
+            Dim m As Matrix = occ.Transformation
+            m.TransformBy(mRot)
+
+            ' 6) 마지막으로 위치를 스폰점으로 "확정"
+            m.Cell(1, 4) = spawnPoint.X
+            m.Cell(2, 4) = spawnPoint.Y
+            m.Cell(3, 4) = spawnPoint.Z
+
+            occ.Transformation = m
+
+        Catch
+        End Try
+    End Sub
+
+
+    ' [NEW] Occurrence의 축(Line)이 spawnPt를 지나가도록 "미리" 살짝 이동시킨다
+    ' - 구속 걸 때 솔버가 멀리 점프하는 걸 크게 줄여줌
+    Private Sub NudgeOccurrenceAxisToPoint(occ As ComponentOccurrence,
+                                      axisProxy As WorkAxisProxy,
+                                      spawnPt As Inventor.Point)
+        Try
+            If Globals.g_inventorApplication Is Nothing Then Return
+            If occ Is Nothing OrElse axisProxy Is Nothing OrElse spawnPt Is Nothing Then Return
+
+            Dim app = Globals.g_inventorApplication
+            Dim tg = app.TransientGeometry
+
+            Dim ln As Inventor.Line = TryCast(axisProxy.Geometry, Inventor.Line)
+            If ln Is Nothing Then Return
+
+            Dim p0 As Inventor.Point = ln.RootPoint
+            Dim v As Inventor.Vector = ln.Direction
+            If v Is Nothing Then Return
+
+            Dim vv As Double = v.DotProduct(v)
+            If vv <= 0 Then Return
+
+            ' spawnPt를 현재 축 라인에 직교투영한 점 cp
+            Dim w As Inventor.Vector = tg.CreateVector(spawnPt.X - p0.X, spawnPt.Y - p0.Y, spawnPt.Z - p0.Z)
+            Dim t As Double = w.DotProduct(v) / vv
+
+            Dim cp As Inventor.Point = tg.CreatePoint(p0.X + v.X * t, p0.Y + v.Y * t, p0.Z + v.Z * t)
+
+            ' 축을 spawnPt로 옮기기 위한 translation = spawnPt - cp
+            Dim dx As Double = spawnPt.X - cp.X
+            Dim dy As Double = spawnPt.Y - cp.Y
+            Dim dz As Double = spawnPt.Z - cp.Z
+
+            ' 변위가 너무 작으면 스킵
+            If Math.Abs(dx) < 0.000001 AndAlso Math.Abs(dy) < 0.000001 AndAlso Math.Abs(dz) < 0.000001 Then Return
+
+            Dim m As Matrix = occ.Transformation
+            Dim mm As Matrix = tg.CreateMatrix()
+            mm.SetToIdentity()
+            mm.Cell(1, 4) = dx
+            mm.Cell(2, 4) = dy
+            mm.Cell(3, 4) = dz
+
+            ' 현재 변환 * 이동 변환
+            m.TransformBy(mm)
+            occ.Transformation = m
+
+            Try
+                app.ActiveView.Update()
+            Catch
+            End Try
+        Catch
+        End Try
+    End Sub
+    ' [NEW] Support Occ에서 "축(Line)에 가장 가까운 WorkPoint"를 찾아 Proxy 반환
+    ' - spawnPoint 근처가 아니라 "축 위 점"을 찾는 게 핵심(오프셋/날아감 방지)
+    Private Function GetSupportWorkPointProxyOnAxis(occ As ComponentOccurrence,
+                                               axisProxy As WorkAxisProxy) As WorkPointProxy
+        Try
+            If occ Is Nothing OrElse axisProxy Is Nothing Then Return Nothing
+
+            Dim app = Globals.g_inventorApplication
+            If app Is Nothing Then Return Nothing
+
+            Dim tg = app.TransientGeometry
+
+            Dim partDef As PartComponentDefinition = TryCast(occ.Definition, PartComponentDefinition)
+            If partDef Is Nothing Then Return Nothing
+
+            Dim ln As Inventor.Line = TryCast(axisProxy.Geometry, Inventor.Line)
+            If ln Is Nothing Then
+                ' 축 geometry가 Line이 아니면 fallback
+                GoTo FALLBACK_WP1
+            End If
+
+            Dim p0 As Inventor.Point = ln.RootPoint
+            Dim v As Inventor.Vector = ln.Direction
+            If v Is Nothing OrElse v.Length <= 0 Then GoTo FALLBACK_WP1
+
+            Dim bestWp As WorkPoint = Nothing
+            Dim bestDist As Double = Double.MaxValue
+
+            For Each wp As WorkPoint In partDef.WorkPoints
+                If wp Is Nothing Then Continue For
+
+                Dim lp As Inventor.Point = Nothing
+                Try
+                    lp = TryCast(wp.Point, Inventor.Point)
+                Catch
+                    lp = Nothing
+                End Try
+                If lp Is Nothing Then Continue For
+
+                ' 로컬→전역
+                Dim pg As Inventor.Point = tg.CreatePoint(lp.X, lp.Y, lp.Z)
+                pg.TransformBy(occ.Transformation)
+
+                ' 점-직선 거리 = |(pg-p0) x v| / |v|
+                Dim w As Inventor.Vector = tg.CreateVector(pg.X - p0.X, pg.Y - p0.Y, pg.Z - p0.Z)
+                Dim c As Inventor.Vector = w.CrossProduct(v)
+                If c Is Nothing Then Continue For
+
+                Dim d As Double = c.Length / v.Length
+
+                If d < bestDist Then
+                    bestDist = d
+                    bestWp = wp
+                End If
+            Next
+
+            If bestWp Is Nothing Then GoTo FALLBACK_WP1
+
+            Dim prxObj As Object = Nothing
+            occ.CreateGeometryProxy(bestWp, prxObj)
+            Return TryCast(prxObj, WorkPointProxy)
+
+FALLBACK_WP1:
+            ' 마지막 fallback: WorkPoints(1)
+            Try
+                Dim wp1 As WorkPoint = partDef.WorkPoints.Item(1)
+                Dim prxObj1 As Object = Nothing
+                occ.CreateGeometryProxy(wp1, prxObj1)
+                Return TryCast(prxObj1, WorkPointProxy)
+            Catch
+            End Try
+
+            Return Nothing
+        Catch
+            Return Nothing
+        End Try
+    End Function
+    ' [CHANGED] targetOcc에서 pick 기준으로 가장 가까운 "원통 FaceProxy"를 잡고,
+    '          그 원통의 "중심축"을 Assembly WorkAxis로 만들어 WorkAxisProxy 반환
+    ' - 변경 포인트:
+    '   1) Definition.Face 루프 대신 GetCylinderFaceProxiesFromOccurrence(Proxy 기반) 사용
+    '   2) 거리측정 실패/프록시 실패에 강함
+    '   3) Cylinder 캐스팅 실패 시 fp.NativeObject(Face)로 한번 더 시도
+    Private Function GetTargetCylinderAxisProxyNearPick(targetOcc As ComponentOccurrence,
+                                                    pickPt As Inventor.Point) As WorkAxisProxy
+        Try
+            If Globals.g_inventorApplication Is Nothing Then Return Nothing
+            If targetOcc Is Nothing Then Return Nothing
+
+            Dim app = Globals.g_inventorApplication
+            Dim tg = app.TransientGeometry
+
+            ' 1) Assembly 컨텍스트에서 원통 FaceProxy 후보 수집
+            Dim candidates As List(Of FaceProxy) = GetCylinderFaceProxiesFromOccurrence(targetOcc)
+            If candidates Is Nothing OrElse candidates.Count = 0 Then Return Nothing
+
+            ' 2) pickPt에 가장 가까운 원통 FaceProxy 선택(거리측정 실패는 스킵)
+            Dim bestFp As FaceProxy = Nothing
+            Dim bestDist As Double = Double.MaxValue
+
+            If pickPt IsNot Nothing Then
+                For Each fp As FaceProxy In candidates
+                    If fp Is Nothing Then Continue For
+
+                    Dim d As Double = Double.MaxValue
+                    Try
+                        d = app.MeasureTools.GetMinimumDistance(pickPt, fp)
+                    Catch
+                        Continue For
+                    End Try
+
+                    If d < bestDist Then
+                        bestDist = d
+                        bestFp = fp
+                    End If
+                Next
+            End If
+
+            ' pickPt가 없거나(혹은 전부 거리측정 실패)면 "반지름 최대"로 fallback
+            If bestFp Is Nothing Then
+                Dim bestR As Double = -1.0
+                For Each fp As FaceProxy In candidates
+                    If fp Is Nothing Then Continue For
+
+                    Dim cyl0 As Cylinder = Nothing
+                    Try
+                        cyl0 = TryCast(fp.Geometry, Cylinder)
+                    Catch
+                        cyl0 = Nothing
+                    End Try
+
+                    If cyl0 Is Nothing Then
+                        Try
+                            Dim nf As Face = TryCast(fp.NativeObject, Face)
+                            If nf IsNot Nothing Then cyl0 = TryCast(nf.Geometry, Cylinder)
+                        Catch
+                            cyl0 = Nothing
+                        End Try
+                    End If
+
+                    If cyl0 Is Nothing Then Continue For
+
+                    If cyl0.Radius > bestR Then
+                        bestR = cyl0.Radius
+                        bestFp = fp
+                    End If
+                Next
+            End If
+
+            If bestFp Is Nothing Then Return Nothing
+
+            ' 3) 원통 기하에서 축 정보 추출 (Cylinder 확보)
+            Dim cyl As Cylinder = Nothing
+            Try
+                cyl = TryCast(bestFp.Geometry, Cylinder)
+            Catch
+                cyl = Nothing
+            End Try
+
+            If cyl Is Nothing Then
+                Try
+                    Dim nativeFace As Face = TryCast(bestFp.NativeObject, Face)
+                    If nativeFace IsNot Nothing Then
+                        cyl = TryCast(nativeFace.Geometry, Cylinder)
+                    End If
+                Catch
+                    cyl = Nothing
+                End Try
+            End If
+
+            If cyl Is Nothing Then Return Nothing
+
+            ' 4) 축 위 점(파트좌표) + 축 방향(파트좌표) → Assembly 좌표 변환
+            Dim p0 As Inventor.Point = tg.CreatePoint(cyl.BasePoint.X, cyl.BasePoint.Y, cyl.BasePoint.Z)
+            Dim v0 As Inventor.Vector = tg.CreateVector(cyl.AxisVector.X, cyl.AxisVector.Y, cyl.AxisVector.Z)
+
+            p0.TransformBy(targetOcc.Transformation)
+            v0.TransformBy(targetOcc.Transformation)
+
+            If v0 Is Nothing OrElse v0.Length <= 0 Then Return Nothing
+
+            Dim u0 As UnitVector = tg.CreateUnitVector(v0.X, v0.Y, v0.Z)
+
+            ' 5) Assembly WorkAxis 생성 후 Proxy 반환
+            Dim asm As AssemblyDocument = TryCast(app.ActiveDocument, AssemblyDocument)
+            If asm Is Nothing Then Return Nothing
+
+            Dim asmDef As AssemblyComponentDefinition = asm.ComponentDefinition
+
+            Try
+                If m_tempWorkAxis IsNot Nothing Then m_tempWorkAxis.Delete()
+            Catch
+            End Try
+            m_tempWorkAxis = Nothing
+
+            m_tempWorkAxis = asmDef.WorkAxes.AddFixed(p0, u0, False)
+
+            Dim axisProxyObj As Object = Nothing
+            asmDef.CreateGeometryProxy(m_tempWorkAxis, axisProxyObj)
+
+            Return TryCast(axisProxyObj, WorkAxisProxy)
+
+        Catch
+            Return Nothing
+        End Try
     End Function
 
 #End Region
